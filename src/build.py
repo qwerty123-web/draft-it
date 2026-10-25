@@ -1,15 +1,17 @@
 import os, shutil, hashlib, json
-HERE=os.path.dirname(os.path.abspath(__file__))
-B=HERE+'/'
-OUT=os.path.dirname(HERE)+'/'
+B='/home/claude/pakka2/'
+OUT='/home/claude/draft-it/'
 FONTS='<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap">\n'
 css=open(B+'style.css').read()
-SRC=['i18n.js','i18n2.js','i18n3.js','i18n4.js','i18n5.js','seed_tr.js','audio.js','app.js']
+SRC=['i18n.js','i18n2.js','i18n3.js','i18n4.js','i18n5.js','i18n6.js','seed_tr.js','audio.js','app.js']
 js=''.join(open(B+f).read()+'\n' for f in SRC)
 BODY='''<div class="app" id="app"></div>
 <div id="sheetWrap" hidden><div class="scrim" data-act="closeSheet"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div id="toast" role="status" hidden></div>
 '''
+# 1. Claude artifact (fragment; the host adds the document skeleton)
+art='<title>Draft It</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'+FONTS+'<style>'+css+'</style>\n'+BODY+'<script>'+js+'</script>'
+open('/home/claude/pakka/index.html','w').write(art)
 # 2. Standalone web app / PWA
 ver=hashlib.sha256((css+js).encode()).hexdigest()[:10]
 page=f'''<!doctype html>
@@ -30,11 +32,13 @@ page=f'''<!doctype html>
 {FONTS}<style>{css}</style>
 </head>
 <body>
-{BODY}<script>{js}</script>
+{BODY}<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script>{js}</script>
 <script>
-if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){{
-  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{{}}));
-}}
+/* Draft It runs online only: remove any older offline cache */
+if('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{{}});
+if(window.caches) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{{}});
 </script>
 </body>
 </html>
@@ -44,19 +48,10 @@ open(OUT+'index.html','w').write(page)
 manifest={"name":"Draft It","short_name":"Draft It","description":"Turn WhatsApp deals into clear, signed agreements.","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#0B2E63","theme_color":"#0B2E63","lang":"en-IN","categories":["business","productivity"],
  "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icons/maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
 open(OUT+'manifest.webmanifest','w').write(json.dumps(manifest,indent=2))
-sw=f'''/* Draft It offline cache, version {ver} */
-const CACHE='draft-it-{ver}';
-const CORE=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png','./icons/favicon-64.png'];
-self.addEventListener('install',e=>{{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())); }});
-self.addEventListener('activate',e=>{{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); }});
-self.addEventListener('fetch',e=>{{
-  const r=e.request; if(r.method!=='GET') return;
-  const u=new URL(r.url);
-  if(u.hostname==='api.anthropic.com') return;
-  if(r.mode==='navigate'){{ e.respondWith(fetch(r).then(res=>{{ const cp=res.clone(); caches.open(CACHE).then(c=>c.put('./index.html',cp)); return res; }}).catch(()=>caches.match('./index.html'))); return; }}
-  e.respondWith(caches.match(r).then(hit=>hit||fetch(r).then(res=>{{ if(res.ok&&(u.origin===location.origin||/fonts\\.(googleapis|gstatic)\\.com|cdnjs\\.cloudflare\\.com|cdn\\.jsdelivr\\.net/.test(u.hostname))){{ const cp=res.clone(); caches.open(CACHE).then(c=>c.put(r,cp)); }} return res; }})));
-}});
-'''
-open(OUT+'sw.js','w').write(sw)
+if os.path.exists(OUT+'sw.js'): os.remove(OUT+'sw.js')
+if not os.path.exists(OUT+'config.js'):
+    open(OUT+'config.js','w').write("/* Draft It online storage. Paste your Supabase Project URL and anon public key (Supabase: Project Settings > API).\n   The anon key is safe to publish: row-level security in supabase/schema.sql keeps each account's data private. */\nwindow.DRAFTIT_CONFIG = {\n  supabaseUrl: '',\n  supabaseAnonKey: ''\n};\n")
 open(OUT+'.nojekyll','w').write('')
-print('built index.html',len(page),'bytes, cache version',ver)
+os.makedirs(OUT+'src',exist_ok=True)
+for f in SRC+['style.css','build.py']: shutil.copy(B+f,OUT+'src/'+f)
+print('artifact',len(art),'standalone',len(page),'ver',ver)

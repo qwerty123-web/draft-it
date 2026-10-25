@@ -340,3 +340,5 @@ a.btn{text-decoration:none}
 .splash .brand{display:flex;align-items:center;gap:10px;font-size:26px;font-weight:700}
 .splash .spin{border-color:rgba(255,255,255,.3);border-top-color:#fff}
 @media (min-width:900px){ .app,.nav-in,.sheet{max-width:720px} .app{box-shadow:0 0 0 1px var(--line-2)} }
+.cloud-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--green-t);color:var(--green);vertical-align:1px}
+.cloud-badge.saving{background:var(--navy-t);color:var(--navy)} .cloud-badge.error{background:var(--red-t);color:var(--red)}

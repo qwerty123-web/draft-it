@@ -86,7 +86,7 @@ function parseChat(text){
 const STORE='draftit.v1';
 let S=null;
 const ui={quip:1+Math.floor(Math.random()*6),view:'home',dealId:null,tab:'terms',actor:'me',calMonth:null,calDay:null,traceClause:null,busy:null,speaking:null,inp:null,verify:{},tr:{running:false,failed:false},auth:null,tut:null,docView:'simple',roomDraft:'',guest:null,pickL:null,q:null,rs:null};
-function save(){ try{ localStorage.setItem(STORE,JSON.stringify(S)); }catch(e){} }
+function save(){ if(SB&&cloud.uid){ scheduleCloudSave(); return; } try{ localStorage.setItem(STORE,JSON.stringify(S)); }catch(e){} }
 function load(){ try{ const r=localStorage.getItem(STORE); if(r){ const v=JSON.parse(r); if(v&&v.deals&&v.settings&&v.tr&&v.accounts) return v; } }catch(e){} return null; }
 const deal=id=>{ const k=id||ui.dealId; return S.deals.find(d=>d.id===k)||(ui.guest&&ui.guest.id===k?ui.guest:null); };
 const acct=()=>S&&S.session?S.accounts[S.session]:null;
@@ -193,7 +193,7 @@ function log(d,clauseId,rev,action,text,by,at,note){ d.clauseLog.push({clauseId,
 function newDealObj(id,title,created,parties,owner){ return {id,title,created,parties,owner:owner||(S.session||''),category:null,place:'Bengaluru',value:null,records:[],terms:{},flags:[],dates:[],analysis:null,draft:null,versions:[],clauseLog:[],lawyerReq:null,stamp:{status:'not_paid',state:'Karnataka',cert:''},needsRevision:false,room:[],frozen:null,report:null}; }
 
 async function seedState(){
-  const lang=S&&S.settings?S.settings.lang:'en';
+  let lang=S&&S.settings?S.settings.lang:''; if(!lang){ try{ lang=localStorage.getItem('draftit.lang')||''; }catch(e){} } lang=LI[lang]!=null?lang:'en';
   S={v:5,counter:1300,settings:{lang,rate:0.95,voiceURI:'',ai:true,userName:'',business:'',userId:''},tr:{hi:{},mr:{},te:{},ta:{},kn:{}},deals:[],accounts:{},session:null,notary:[]};
   const RAVI='u_ravi_4821', at0='2026-10-01T10:00:00'+TZ; Object.assign(S.settings,{userName:'Ravi Kumar',business:'Kumar Print & Pack',userId:RAVI});
   S.accounts[RAVI]={id:RAVI,name:'Ravi Kumar',mobile:'9876543210',role:'seller',business:'Kumar Print & Pack',train:false,tutDone:false,created:at0};
@@ -414,9 +414,9 @@ function currentClauses(d){ if(d.draft) return d.draft.clauses; const v=latestVe
 const statusChip=st=>`<span class="chip ${STATUS_CHIP[st]||'c-mute'}">${esc(t(st))}</span>`;
 
 /* ---------- translation of deal content ---------- */
-function contentStrings(){
+function contentStrings(ds){
   const out=new Set(); const add=s=>{ if(s&&typeof s==='string'&&/[A-Za-z]{3}/.test(s)&&!STATIC_TX[s]) out.add(s); };
-  myDeals().concat(ui.guest?[ui.guest]:[]).forEach(d=>{ add(d.title); TERM_DEFS.forEach(def=>{ const tm=d.terms[def.key]; if(!tm) return; add(tm.value); add(tm.open); tm.history.forEach(h=>add(h.value)); });
+  (ds||myDeals().concat(ui.guest?[ui.guest]:[])).forEach(d=>{ add(d.title); TERM_DEFS.forEach(def=>{ const tm=d.terms[def.key]; if(!tm) return; add(tm.value); add(tm.open); tm.history.forEach(h=>add(h.value)); });
     d.flags.forEach(f=>{ add(f.title); add(f.detail); add(f.ask); }); d.dates.forEach(e=>add(e.label));
     currentClauses(d).forEach(c=>{ add(c.text); add(c.open); if(c.pending){ add(c.pending.text); add(c.pending.open); } });
     d.versions.forEach(v=>{ v.payload.clauses.forEach(c=>{ add(c.text); add(c.open); }); if(v.lawyer) add(v.lawyer.note); }); });
@@ -691,20 +691,20 @@ function voicesFor(code){ try{ const bc=langOf(code).bcp.toLowerCase(); return s
 function renderSettings(){
   const s=S.settings, tts='speechSynthesis' in window, vs=tts?voicesFor(s.lang):[];
   const a=acct();
-  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':a.role==='buyer'?'buyer':'seller'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}<p class="tiny">${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · ${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p><div class="row wrap"><button class="btn sec sm" data-act="logout">${esc(t('logOut'))}</button><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div></section>
-  <button class="card pad tap row between" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
+  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':a.role==='buyer'?'buyer':'seller'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="logout">${esc(t('logOut'))}</button><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div></section>
+  <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
   <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p></section>
   <section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
   <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
   ${STANDALONE&&!isInstalled()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
   <details class="card legal"><summary>${esc(t('legalNotes'))}</summary><div class="in"><p>${esc(t('legal1'))}</p><p>${esc(t('legal2'))}</p><p>${esc(t('legal3'))}</p><p>${esc(t('legal4'))}</p><p>${esc(t('legal5'))}</p></div></details>
-  <button class="btn warn" data-act="reset">${esc(t('resetDemo'))}</button>`;
+  ${cloud.uid?'':`<button class="btn warn" data-act="reset">${esc(t('resetDemo'))}</button>`}`;
 }
 
 function renderData(){
   const a=acct(), ic6=['file','lock','user','spark','shield','cal'];
   let h=`<section class="sec-h"><h1 class="h1">${esc(t('yourData'))}</h1>${sayBtn('dataList',{sel:'b, .small'})}</section><ul class="list card" id="dataList">`;
-  for(let i=1;i<=6;i++) h+=`<li class="pad row" style="align-items:flex-start;gap:12px"><span class="rc-ico">${ic(ic6[i-1],18)}</span><span class="stack-s" style="gap:3px"><b>${esc(t('dataT'+i))}</b><span class="small muted">${esc(t('dataB'+i))}</span></span></li>`;
+  for(let i=1;i<=6;i++) h+=`<li class="pad row" style="align-items:flex-start;gap:12px"><span class="rc-ico">${ic(ic6[i-1],18)}</span><span class="stack-s" style="gap:3px"><b>${esc(t('dataT'+i))}</b><span class="small muted">${esc(t(i===2&&SB?'dataB2cloud':'dataB'+i))}</span></span></li>`;
   h+=`</ul>`;
   if(a) h+=`<section class="card pad stack"><label class="check"><input type="checkbox" ${a.train?'checked':''} data-change="setTrain"><span>${esc(t('trainToggle'))}</span></label><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></section><button class="btn warn" data-act="deleteAcct">${esc(t('deleteData'))}</button>`;
   return h;
@@ -1060,6 +1060,49 @@ function notarySheet(){ openSheet(sheetHead(t('notaryT'))+`<p class="small muted
 
 /* ---------- live chat room ---------- */
 const roomConn={};
+/* ---------- online accounts and storage (Supabase) ---------- */
+const CFG=window.DRAFTIT_CONFIG||{};
+let SB=null; const cloud={uid:null,email:'',state:'saved',updatedAt:null,timer:null,dirty:false};
+function initCloud(){ if(!STANDALONE||!CFG.supabaseUrl||!CFG.supabaseAnonKey||!window.supabase||typeof window.supabase.createClient!=='function') return; try{ SB=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }catch(e){ SB=null; } }
+function cloudPayload(){ const uid=cloud.uid, deals=S.deals.filter(d=>d.owner===uid), strs=contentStrings(deals), tr={};
+  ['hi','mr','te','ta','kn'].forEach(lg=>{ const m=S.tr[lg]||{}, o={}; strs.forEach(x=>{ if(m[x]) o[x]=m[x]; }); tr[lg]=o; });
+  return {v:1,account:S.accounts[uid],deals,notary:(S.notary||[]).filter(n=>n.by===uid),settings:{lang:S.settings.lang,rate:S.settings.rate,voiceURI:S.settings.voiceURI,ai:S.settings.ai},counter:S.counter,tr}; }
+function setCloudState(st){ cloud.state=st; const el=document.getElementById('cloudState'); if(el) el.outerHTML=cloudBadge(); }
+const cloudBadge=()=>!cloud.uid?'':`<span id="cloudState" class="cloud-badge ${cloud.state}">${ic(cloud.state==='error'?'excl':cloud.state==='saving'?'spark':'check',13)} ${esc(t(cloud.state==='saving'?'savingOnline':cloud.state==='error'?'saveFailed':'savedOnline'))}</span>`;
+function scheduleCloudSave(){ cloud.dirty=true; clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudSaveNow,1200); if(cloud.state!=='saving') setCloudState('saving'); }
+async function cloudSaveNow(){ if(!SB||!cloud.uid) return false; clearTimeout(cloud.timer); cloud.dirty=false; const at=new Date().toISOString();
+  let error=null; try{ ({error}=await SB.from('workspaces').upsert({user_id:cloud.uid,data:cloudPayload(),updated_at:at})); }catch(e){ error=e; }
+  if(error){ cloud.dirty=true; setCloudState('error'); cloud.timer=setTimeout(cloudSaveNow,6000); return false; }
+  cloud.updatedAt=at; setCloudState('saved'); return true; }
+function applyWorkspace(w){ const uid=cloud.uid; if(w.account) S.accounts[uid]=Object.assign({},w.account,{id:uid}); S.deals=Array.isArray(w.deals)?w.deals:[]; S.notary=w.notary||[]; Object.assign(S.settings,w.settings||{}); S.counter=Math.max(S.counter,w.counter||0); if(w.tr) for(const lg in w.tr){ S.tr[lg]=S.tr[lg]||{}; Object.assign(S.tr[lg],w.tr[lg]); } }
+async function loadCloud(user){
+  cloud.uid=user.id; cloud.email=user.email||'';
+  const {data,error}=await SB.from('workspaces').select('data,updated_at').eq('user_id',user.id).maybeSingle();
+  if(error) throw error;
+  if(data&&data.data){ applyWorkspace(data.data); cloud.updatedAt=data.updated_at; }
+  else { const A=ui.auth||{}, md=user.user_metadata||{}, role=['seller','buyer','lawyer'].includes(A.role)&&A.mode==='signup'?A.role:(md.role||'seller');
+    const name=String((A.mode==='signup'&&A.name)||md.name||(user.email||'').split('@')[0]).trim();
+    S.accounts[user.id]={id:user.id,name,email:user.email||'',mobile:String(A.mobile||'').replace(/\D/g,''),role,business:role==='lawyer'?'':String(A.business||md.business||'').trim(),train:!!A.train,tutDone:false,created:nowISO()};
+    if(role==='lawyer') Object.assign(S.accounts[user.id],{lawyerId:'lw_'+user.id.slice(0,8),enrol:String(A.enrol||'').trim(),bar:A.bar||'Karnataka',fee:+A.fee||0});
+    S.deals=[]; S.notary=[]; if(role!=='lawyer'){ cloneTemplate(1,user.id); cloneTemplate(0,user.id); }
+    await cloudSaveNow(); }
+  useAccount(user.id);
+}
+async function cloudSignOut(){ if(cloud.dirty) await cloudSaveNow(); try{ await SB.auth.signOut(); }catch(e){} cloud.uid=null; cloud.email=''; S=null; await seedState(); }
+document.addEventListener('visibilitychange',async()=>{ if(!SB||!cloud.uid) return; if(document.hidden){ if(cloud.dirty) cloudSaveNow(); return; }
+  if(cloud.dirty||!$('#sheetWrap').hidden) return;
+  try{ const {data}=await SB.from('workspaces').select('data,updated_at').eq('user_id',cloud.uid).maybeSingle(); if(data&&cloud.updatedAt&&Date.parse(data.updated_at)>Date.parse(cloud.updatedAt)+500){ applyWorkspace(data.data); cloud.updatedAt=data.updated_at; ui.keep=true; render(); } }catch(e){} });
+/* live chat outside Claude: Supabase Realtime, shaped like the room capability */
+function sbRoom(name){
+  const key=Math.random().toString(36).slice(2,10), ch=SB.channel(name,{config:{broadcast:{self:false},presence:{key}}}), L={msg:[],peers:[],conn:[]}; let connected=false, mine={};
+  const snap=()=>{ const st=ch.presenceState(), arr=[]; for(const k in st){ const p=Object.assign({},(st[k]||[])[0]||{}); delete p.presence_ref; arr.push({peer:k,sameTab:k===key,isMe:k===key,presence:p}); } return arr; };
+  ch.on('broadcast',{event:'msg'},m=>L.msg.forEach(f=>f({data:m.payload,sameTab:false,isMe:false})));
+  ch.on('presence',{event:'sync'},()=>{ const peers=snap(); L.peers.forEach(f=>f({peers})); });
+  ch.subscribe(st=>{ connected=st==='SUBSCRIBED'; if(connected&&Object.keys(mine).length) ch.track(mine); L.conn.forEach(f=>f(connected)); });
+  return {on:(tp,f)=>{ L.msg.push(f); return ()=>{}; },onPeers:f=>{ L.peers.push(f); return ()=>{}; },onConnection:f=>{ L.conn.push(f); return ()=>{}; },connected:()=>connected,
+    emit:(tp,data)=>Promise.resolve(ch.send({type:'broadcast',event:tp,payload:data})),presence:o=>{ mine=Object.assign(mine,o); return connected?Promise.resolve(ch.track(mine)):Promise.resolve(); }};
+}
+const roomCap=()=>ROOMCAP||(SB?{join:async n=>sbRoom(n)}:null);
 const roomCode=id=>String(id).replace(/[^A-Za-z0-9]/g,'').toUpperCase();
 function mergeRoomMsgs(d,list,name,mine){
   let added=0; (Array.isArray(list)?list:[]).slice(-20).forEach(x=>{ if(!x||typeof x.t!=='string'||!x.id||d.room.some(y=>y.id===x.id)) return; d.room.push({id:String(x.id).slice(0,40),by:mine?'me':'cp',name:String(name||'').slice(0,60)||'—',text:x.t.slice(0,600),at:typeof x.at==='string'?x.at.slice(0,30):nowISO()}); added++; });
@@ -1075,8 +1118,8 @@ function roomPresence(d){
   c.r.presence(pres).catch(()=>{});
 }
 async function joinRoom(d){
-  if(!ROOMCAP||roomConn[d.id]) return; roomConn[d.id]={r:null,n:1};
-  try{ const r=await ROOMCAP.join('deal-'+roomCode(d.id).toLowerCase()); roomConn[d.id].r=r;
+  const cap=roomCap(); if(!cap||roomConn[d.id]) return; roomConn[d.id]={r:null,n:1};
+  try{ const r=await cap.join('deal-'+roomCode(d.id).toLowerCase()); roomConn[d.id].r=r;
     r.on('msg',msg=>{ if(msg.sameTab) return; const x=msg.data||{}, dd=deal(d.id); if(!dd) return; if(mergeRoomMsgs(dd,[{id:x.id,t:x.text,at:x.at}],x.name,msg.isMe)&&ui.view==='room'&&ui.roomDeal===d.id) render(); });
     r.onPeers(ch=>{ const dd=deal(d.id); if(!dd) return; roomConn[d.id].n=ch.peers.length; let changed=false;
       ch.peers.forEach(pe=>{ if(pe.sameTab) return; const pr=pe.presence||{}; if(mergeRoomMsgs(dd,pr.msgs,pr.name,pe.isMe)) changed=true;
@@ -1091,14 +1134,14 @@ function inviteSheet(){
   openSheet(sheetHead(t('roomInvite',{name:first(cp.name)}),esc(tx(d.title)))+`<div class="code-box"><span class="lbl">${esc(t('roomCodeLbl'))}</span><b class="mono">${esc(code)}</b></div><ol class="routes">
   ${STANDALONE?'':`<li><span class="rn">1</span><div class="stack-s"><b>${esc(t('inv1T'))}</b><p class="small muted">${esc(t('inv1B',{name:first(cp.name)}))}</p></div></li>`}
   <li><span class="rn">2</span><div class="stack-s"><b>${esc(t('inv2T'))}</b><div class="bubble">${esc(msg)}</div><div class="row wrap"><button class="btn sec sm" data-act="copyText" data-text="${esc(msg)}">${ic('copy',16)} ${esc(t('copyMessage'))}</button><a class="btn sec sm" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${ic('chat',16)} WhatsApp</a></div></div></li>
-  <li><span class="rn">3</span><div class="stack-s"><b>${esc(t('inv3T'))}</b><p class="small muted">${esc(t('inv3B',{code}))}</p></div></li></ol><div class="note small">${esc(t(STANDALONE&&!ROOMCAP?'invWebNote':'invNote'))}</div>`);
+  <li><span class="rn">3</span><div class="stack-s"><b>${esc(t('inv3T'))}</b><p class="small muted">${esc(t('inv3B',{code}))}</p></div></li></ol><div class="note small">${esc(t(STANDALONE&&!roomCap()?'invWebNote':'invNote'))}</div>`);
 }
 function coverage(d){ const o={}; TERM_DEFS.forEach(x=>{ o[x.key]=(d.terms[x.key]||{}).status==='agreed'||d.room.some(m=>TERM_RE[x.key].test(m.text)); }); return o; }
 function renderRoom(){
   const d=deal(ui.roomDeal); if(!d) return '';
   const c=roomConn[d.id], live=!!(c&&c.r&&c.r.connected()), cov=coverage(d), done=TERM_DEFS.filter(x=>cov[x.key]).length, unc=TERM_DEFS.filter(x=>!cov[x.key]).slice(0,5), as=ui.roomAs||'me';
   const others=live?Math.max(0,c.n-1):0;
-  let h=`<div class="room-bar row between wrap"><span class="small">${live?`<span class="live-dot"></span>${esc(t('roomLive'))} · ${esc(others?t('roomOthers',{n:others}):t('roomWaiting'))}`:esc(t(ROOMCAP?'roomConnecting':'roomLocal'))}</span>${d.guest?'':`<button class="btn sec sm" data-act="roomInvite">${ic('link',16)} ${esc(t('roomInvite',{name:first(d.parties[1].name)}))}</button>`}</div><p class="tiny">${esc(t('roomCodeLbl'))}: <b class="mono">${esc(roomCode(d.id))}</b></p>`;
+  let h=`<div class="room-bar row between wrap"><span class="small">${live?`<span class="live-dot"></span>${esc(t('roomLive'))} · ${esc(others?t('roomOthers',{n:others}):t('roomWaiting'))}`:esc(t(roomCap()?'roomConnecting':'roomLocal'))}</span>${d.guest?'':`<button class="btn sec sm" data-act="roomInvite">${ic('link',16)} ${esc(t('roomInvite',{name:first(d.parties[1].name)}))}</button>`}</div><p class="tiny">${esc(t('roomCodeLbl'))}: <b class="mono">${esc(roomCode(d.id))}</b></p>`;
   h+=`<div class="room-cov"><span class="lbl">${esc(t('covered'))} ${done}/${TERM_DEFS.length}</span><span class="bar"><i style="width:${Math.round(done/TERM_DEFS.length*100)}%"></i></span></div>`;
   h+=`<div class="room-msgs" id="roomMsgs">${d.room.length?d.room.map(m=>`<div class="rm ${m.by==='me'?'mine':''}"><div class="rm-b"><span class="rm-n">${esc(m.name)} · ${esc(fmtDT(m.at))}</span><div class="txt">${esc(m.text)}</div></div>${FRAUD_RE.test(m.text)?`<div class="rm-warn">${ic('excl',14)} ${esc(t('roomFraud'))}</div>`:''}</div>`).join(''):`<p class="small muted" style="text-align:center;padding:24px 8px">${esc(t('roomEmpty'))}</p>`}</div>`;
   h+=`<div class="composer">`;
@@ -1140,14 +1183,16 @@ function renderAuth(){
   let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}Draft It</div>${lc}</header><section class="band gut"><h1>${esc(t('welcomeTag'))}</h1><p class="quip">${ic('spark',15)} ${esc(t('quip'+ui.quip))}</p></section><main class="gut stack" style="padding-bottom:40px">`;
   h+=`<div class="seg">${['signup','login','join'].map(m=>`<button aria-pressed="${A.mode===m}" data-act="authMode" data-v="${m}">${esc(t(m==='signup'?'signUp':m==='login'?'logIn':'joinChat'))}</button>`).join('')}</div><section class="card pad stack">`;
   if(A.mode==='join') h+=`<p class="small muted">${esc(t('joinIntro'))}</p><label class="field">${esc(t('roomCodeLbl'))}<input class="inp mono" data-auth="code" value="${esc(A.code||'')}" autocapitalize="characters" placeholder="D05"></label><label class="field">${esc(t('yourName'))}<input class="inp" data-auth="gname" value="${esc(A.gname||'')}"></label><button class="btn full" data-act="authJoin">${ic('chat',18)} ${esc(t('joinChat'))}</button>`;
+  else if(SB&&A.step==='otp') h+=`<p class="small">${esc(t('codeSentTo',{email:A.email}))}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="10" autocomplete="one-time-code" aria-label="${esc(t('enterCode'))}"><p class="tiny">${esc(t('otpEmailHint'))}</p><button class="btn full" data-act="authVerify" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('verifyOtp'))}</button><div class="row between"><button class="link" data-act="authBack">${esc(t('back'))}</button><button class="link" data-act="authOtp">${esc(t('resendCode'))}</button></div>`;
+  else if(SB&&A.mode==='login') h+=`${f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')}<button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('sendCode'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
   else if(A.step==='otp') h+=`<p class="small">${esc(t('enterOtp'))} · +91 ${esc(A.mobile)}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="${esc(t('enterOtp'))}"><p class="tiny">${esc(t('otpDemo'))}</p><button class="btn full" data-act="authVerify">${esc(t('verifyOtp'))}</button><button class="link" data-act="authBack">${esc(t('back'))}</button>`;
   else if(A.mode==='login') h+=`${f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"')}<button class="btn full" data-act="authOtp">${esc(t('sendOtp'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
   else { h+=`<div class="stack-s"><span class="lbl">${esc(t('iAmA'))}</span>${[['seller','seller','roleSellerSub'],['buyer','buyer','roleBuyerSub'],['lawyer','role_lawyer','roleLawyerSub']].map(([k,l,sub])=>`<button class="radio ${A.role===k?'on':''}" data-act="authRole" data-v="${k}"><span class="stack-s" style="gap:1px;text-align:left"><b>${esc(t(l))}</b><span class="tiny">${esc(t(sub))}</span></span></button>`).join('')}</div>`;
-    h+=f('name','yourName','autocomplete="name"')+f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"');
+    h+=f('name','yourName','autocomplete="name"')+(SB?f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')+f('mobile','mobileOpt','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'):f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'));
     if(A.role==='lawyer') h+=f('enrol','enrolNo','placeholder="KAR/1234/2016"')+`<label class="field">${esc(t('barState'))}<select class="sel" data-auth="bar">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat','Kerala'].map(x=>`<option ${A.bar===x?'selected':''}>${x}</option>`).join('')}</select></label>`+f('fee','lawyerFee','inputmode="numeric"');
     else h+=f('business','business');
-    h+=`<label class="check"><input type="checkbox" data-auth="terms" ${A.terms?'checked':''}><span>${esc(t('agreeTerms'))} <button class="link" data-act="go" data-v="data">${esc(t('readPrivacy'))}</button></span></label><label class="check"><input type="checkbox" data-auth="train" ${A.train?'checked':''}><span class="small">${esc(t('trainConsent'))}</span></label><button class="btn full" data-act="authOtp">${esc(t('sendOtp'))}</button><p class="tiny">${esc(t('haveAccount'))} <button class="link" data-act="authMode" data-v="login">${esc(t('logIn'))}</button></p>`; }
-  h+=`</section><section class="stack-s"><span class="lbl">${esc(t('demoAccounts'))}</span><div class="stack-s"><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_ravi_4821"><span class="avatar">RK</span><span class="small"><b>${esc(t('demoSeller'))}</b></span></button><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_meera_1016"><span class="avatar">MI</span><span class="small"><b>${esc(t('demoLawyer'))}</b></span></button></div></section></main>`;
+    h+=`<label class="check"><input type="checkbox" data-auth="terms" ${A.terms?'checked':''}><span>${esc(t('agreeTerms'))} <button class="link" data-act="go" data-v="data">${esc(t('readPrivacy'))}</button></span></label><label class="check"><input type="checkbox" data-auth="train" ${A.train?'checked':''}><span class="small">${esc(t('trainConsent'))}</span></label><button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t(SB?'sendCode':'sendOtp'))}</button><p class="tiny">${esc(t('haveAccount'))} <button class="link" data-act="authMode" data-v="login">${esc(t('logIn'))}</button></p>`; }
+  h+=`</section><section class="stack-s"><span class="lbl">${esc(t(SB?'demoLocal':'demoAccounts'))}</span><div class="stack-s"><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_ravi_4821"><span class="avatar">RK</span><span class="small"><b>${esc(t('demoSeller'))}</b></span></button><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_meera_1016"><span class="avatar">MI</span><span class="small"><b>${esc(t('demoLawyer'))}</b></span></button></div></section></main>`;
   return h;
 }
 function afterLogin(){ ui.quip=1+Math.floor(Math.random()*6); const a=acct(); ui.auth=null; ui.view='home'; ui.dealId=null; ui.tut=a&&!a.tutDone&&a.role!=='lawyer'?0:null; window.scrollTo(0,0); render(); ensureTr(); openHashRoom(); }
@@ -1377,7 +1422,7 @@ document.addEventListener('click',async e=>{
     case 'tab': ui.tab=a.dataset.v; stopSpeak(true); window.scrollTo(0,0); render(); break;
     case 'closeSheet': closeSheet(); break;
     case 'langSheet': langSheet(); break;
-    case 'setLang': S.settings.lang=a.dataset.v; S.settings.voiceURI=''; ui.tr.failed=false; stopSpeak(true); save(); if(a.dataset.close) closeSheet(); render(); ensureTr(); break;
+    case 'setLang': S.settings.lang=a.dataset.v; try{ localStorage.setItem('draftit.lang',a.dataset.v); }catch(err){} S.settings.voiceURI=''; ui.tr.failed=false; stopSpeak(true); save(); if(a.dataset.close) closeSheet(); render(); ensureTr(); break;
     case 'retryTr': ui.tr.failed=false; ensureTr(); break;
     case 'addAny': if(ui.view==='deal'&&d){ ui.inp=null; addEvidenceSheet(); } else pickDealSheet(); break;
     case 'pickDeal': ui.dealId=a.dataset.id; ui.view='deal'; ui.tab='evidence'; render(); ui.inp=null; addEvidenceSheet(); break;
@@ -1484,17 +1529,31 @@ document.addEventListener('click',async e=>{
     case 'authMode': ui.auth.mode=a.dataset.v; ui.auth.step='form'; render(); break;
     case 'authRole': ui.auth.role=a.dataset.v; render(); break;
     case 'authBack': ui.auth.step='form'; ui.auth.otp=''; render(); break;
-    case 'authOtp': { const A=ui.auth; A.mobile=A.mobile.replace(/\D/g,''); if(!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName'));
+    case 'authOtp': if(SB){ const A=ui.auth; A.email=String(A.email||'').trim().toLowerCase(); A.mobile=String(A.mobile||'').replace(/\D/g,'');
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(A.email)) return toast(t('needEmail'));
+      if(A.mode==='signup'){ if(!A.name.trim()) return toast(t('needName')); if(A.mobile&&!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName')); if(A.role==='lawyer'&&!A.enrol.trim()) return toast(t('needEnrol')); if(!A.terms) return toast(t('needTerms')); }
+      A.busy=true; render(); let error=null;
+      try{ ({error}=await SB.auth.signInWithOtp({email:A.email,options:{shouldCreateUser:A.mode==='signup',data:A.mode==='signup'?{name:A.name.trim(),role:A.role,business:A.business.trim()}:undefined}})); }catch(err){ error=err; }
+      A.busy=false; if(error){ render(); return toast(A.mode==='login'&&/signup|not found|not allowed/i.test(String(error.message||''))?t('noAccountEmail'):t('codeSendFail')); }
+      A.step='otp'; A.otp=''; render(); const o=document.querySelector('.otp'); if(o) o.focus(); break; }
+      { const A=ui.auth; A.mobile=A.mobile.replace(/\D/g,''); if(!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName'));
       if(A.mode==='signup'){ if(!A.name.trim()) return toast(t('needName')); if(A.role==='lawyer'&&!A.enrol.trim()) return toast(t('needEnrol')); if(!A.terms) return toast(t('needTerms')); }
       else if(!Object.values(S.accounts).some(x=>x.mobile===A.mobile)) return toast(t('noAccountPhone'));
       A.step='otp'; render(); const o=document.querySelector('.otp'); if(o) o.focus(); break; }
-    case 'authVerify': { const A=ui.auth; if(!/^\d{6}$/.test(A.otp)) return toast(t('needOtp'));
+    case 'authVerify': if(SB){ const A=ui.auth, code=String(A.otp||'').replace(/\D/g,''); if(!/^\d{6,10}$/.test(code)) return toast(t('needOtp'));
+      A.busy=true; render(); let res=null;
+      try{ res=await SB.auth.verifyOtp({email:A.email,token:code,type:'email'}); }catch(err){ res={error:err}; }
+      if(res.error||!res.data||!res.data.user){ A.busy=false; render(); return toast(t('codeBad')); }
+      try{ await loadCloud(res.data.user); }catch(err){ A.busy=false; cloud.uid=null; render(); return toast(t('cloudLoadFail')); }
+      ui.demoBack=null; afterLogin(); break; }
+      { const A=ui.auth; if(!/^\d{6}$/.test(A.otp)) return toast(t('needOtp'));
       if(A.mode==='signup'){ const id='u_'+A.name.trim().toLowerCase().replace(/[^a-z]/g,'').slice(0,8)+'_'+Date.now().toString(36).slice(-4); S.accounts[id]={id,name:A.name.trim(),mobile:A.mobile,role:A.role,business:A.role==='lawyer'?'':A.business.trim(),train:!!A.train,tutDone:false,created:nowISO()}; if(A.role==='lawyer') Object.assign(S.accounts[id],{lawyerId:'lw_'+id,enrol:A.enrol.trim(),bar:A.bar,fee:+A.fee||0}); useAccount(id); if(A.role!=='lawyer'){ cloneTemplate(1,id); cloneTemplate(0,id); } }
       else { const ac=Object.values(S.accounts).find(x=>x.mobile===A.mobile); if(!ac) return toast(t('noAccountPhone')); useAccount(ac.id); }
       afterLogin(); break; }
     case 'demoLogin': useAccount(a.dataset.id); ui.demoBack=null; afterLogin(); break;
-    case 'logout': stopSpeak(true); S.session=null; save(); ui.auth=null; ui.demoBack=null; ui.view='auth'; ui.dealId=null; window.scrollTo(0,0); render(); break;
-    case 'deleteAcct': if(a.dataset.sure){ const id=S.session; S.deals=S.deals.filter(x=>x.owner!==id); delete S.accounts[id]; S.session=null; save(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); } else { a.dataset.sure='1'; a.textContent=t('deleteSure'); } break;
+    case 'logout': stopSpeak(true); if(SB&&cloud.uid){ await cloudSignOut(); } else { S.session=null; save(); } ui.auth=null; ui.demoBack=null; ui.view='auth'; ui.dealId=null; window.scrollTo(0,0); render(); break;
+    case 'deleteAcct': if(a.dataset.sure&&SB&&cloud.uid){ let error=null; try{ ({error}=await SB.rpc('delete_my_account')); }catch(err){ error=err; } if(error) return toast(t('saveFailed')); cloud.dirty=false; cloud.uid=null; try{ await SB.auth.signOut(); }catch(err){} S=null; await seedState(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); }
+      else if(a.dataset.sure){ const id=S.session; S.deals=S.deals.filter(x=>x.owner!==id); delete S.accounts[id]; S.session=null; save(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); } else { a.dataset.sure='1'; a.textContent=t('deleteSure'); } break;
     case 'stampNotNeeded': d.stamp.status='not_needed'; save(); ui.keep=true; render(); break;
     case 'traceClause': ui.traceClause=a.dataset.id; ui.keep=true; render(); break;
     case 'exportHtml': doExport('html'); break;
@@ -1542,5 +1601,11 @@ document.addEventListener('input',e=>{ const el=e.target;
 document.addEventListener('keydown',e=>{ if(e.target&&e.target.id==='roomInput'&&e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); roomSend(); } });
 if('speechSynthesis' in window){ try{ speechSynthesis.onvoiceschanged=()=>{ if(ui.view==='settings') render(); }; speechSynthesis.getVoices(); }catch(e){} }
 
-(async function boot(){ S=load(); render(); if(!S) await seedState(); if(acct()){ ui.view='home'; if(isLawyer()) ui.tut=null; } else ui.view='auth'; render(); ensureTr(); openHashRoom(); })();
+(async function boot(){
+  initCloud();
+  if(SB){ render(); await seedState(); S.session=null; let user=null;
+    try{ const {data}=await SB.auth.getSession(); user=data&&data.session&&data.session.user; }catch(e){}
+    if(user){ try{ await loadCloud(user); ui.view='home'; const a=acct(); ui.tut=a&&!a.tutDone&&a.role!=='lawyer'?0:null; }catch(e){ cloud.uid=null; S.session=null; ui.view='auth'; toast(t('cloudLoadFail')); } } else ui.view='auth';
+    render(); ensureTr(); openHashRoom(); return; }
+  S=load(); render(); if(!S) await seedState(); if(acct()){ ui.view='home'; if(isLawyer()) ui.tut=null; } else ui.view='auth'; render(); ensureTr(); openHashRoom(); })();
 })();
