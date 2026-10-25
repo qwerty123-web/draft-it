@@ -553,8 +553,12 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
 .msg.used .n{background:var(--brand);color:#FFFFFF;border-radius:6px;padding:0 .3rem}
 
 /* evidence rows with a delete button on the right */
-.rec-li{display:flex;align-items:stretch}
-.rec-li>.tap{flex:1;min-width:0}
-.rec-del{flex:none;width:3.5rem;border:0;border-left:1px solid var(--line-2);background:none;color:var(--red);display:grid;place-items:center;cursor:pointer}
-.rec-del:hover{background:var(--red-t)}
+.rec-li{display:flex;align-items:center;gap:.5rem;padding-right:1rem}
+.rec-li>.tap{flex:1;min-width:0;display:flex;align-items:center;gap:.875rem;padding-right:.25rem}
+.rec-code{flex:none;align-self:center;color:var(--ink-2);font-size:.875rem;font-weight:600;background:var(--fill);border-radius:.5rem;padding:.375rem .625rem;white-space:nowrap}
+.rec-code.in{display:none;font-size:.8125rem;padding:.125rem .5rem;margin-left:.25rem;vertical-align:1px}
+@media (max-width:599px){ .rec-li>.tap>.rec-code{display:none} .rec-code.in{display:inline-block} .rec-li>.tap{align-items:flex-start} .rec-li{padding-right:.75rem} }
+.rec-del{flex:none;width:3.5rem;height:3.5rem;border:1.5px solid #F3C4BF;border-radius:var(--r);background:var(--red-t);color:var(--red);display:grid;place-items:center;cursor:pointer}
+.rec-del svg{width:1.5rem;height:1.5rem}
+.rec-del:hover{background:#F9D5D0;border-color:var(--red)}
 .rec-del:focus-visible{outline-offset:-3px}
