@@ -339,6 +339,16 @@ async function seedState(){
   const r5=clausesFromTerms(d5.terms); r5.forEach(c=>log(d5,c.id,1,'generated',c.text,'@pakka','2026-10-24T09:35:00'+TZ));
   const v51=await sealVersion(d5,r5,1,'2026-10-24T11:00:00'+TZ); d5.versions.push(v51);
   r5.forEach(c=>log(d5,c.id,1,'locked',c.text,'@both','2026-10-24T11:00:00'+TZ,'SHA-256 '+shortHash(v51.hash)));
+  /* more dated steps, so the calendar shows the real rhythm of the work */
+  d1.dates.push(
+    {date:'2026-10-25',label:X('Logo file due from Anjali','अंजलि से लोगो फ़ाइल आनी है','अंजलींकडून लोगो फाइल यायची आहे','అంజలి నుంచి లోగో ఫైల్ రావాలి','அஞ்சலியிடமிருந்து லோகோ கோப்பு வர வேண்டும்','ಅಂಜಲಿಯಿಂದ ಲೋಗೋ ಫೈಲ್ ಬರಬೇಕು'),kind:'deadline',status:'proposed'},
+    {date:'2026-10-27',label:X('Start printing the sweet boxes','मिठाई के डिब्बों की छपाई शुरू','मिठाईच्या बॉक्सची छपाई सुरू','స్వీట్ బాక్సుల ముద్రణ ప్రారంభం','இனிப்புப் பெட்டிகள் அச்சிடத் தொடக்கம்','ಸಿಹಿ ಬಾಕ್ಸ್ ಮುದ್ರಣ ಆರಂಭ'),kind:'meeting',status:'proposed'},
+    {date:'2026-10-29',label:X('Quality check of printed boxes','छपे डिब्बों की गुणवत्ता जांच','छापील बॉक्सची गुणवत्ता तपासणी','ముద్రించిన బాక్సుల నాణ్యత తనిఖీ','அச்சிட்ட பெட்டிகளின் தரச் சோதனை','ಮುದ್ರಿತ ಬಾಕ್ಸ್‌ಗಳ ಗುಣಮಟ್ಟ ಪರಿಶೀಲನೆ'),kind:'meeting',status:'proposed'});
+  d3.dates.push({date:'2026-10-28',label:X('Send the written quote to Sunil','सुनील को लिखित कोटेशन भेजना है','सुनील यांना लेखी कोटेशन पाठवायचे','సునీల్‌కు రాతపూర్వక కొటేషన్ పంపాలి','சுனிலுக்கு எழுத்துப்பூர்வ விலைப்புள்ளி அனுப்ப வேண்டும்','ಸುನೀಲ್‌ಗೆ ಲಿಖಿತ ಕೊಟೇಶನ್ ಕಳುಹಿಸಬೇಕು'),kind:'deadline',status:'proposed'});
+  d4.dates.push(
+    {date:'2026-10-16',label:X('Advance ₹20,000 received','₹20,000 एडवांस मिला','₹20,000 आगाऊ मिळाले','₹20,000 అడ్వాన్స్ వచ్చింది','₹20,000 முன்பணம் கிடைத்தது','₹20,000 ಮುಂಗಡ ಬಂದಿದೆ'),kind:'payment',status:'done'},
+    {date:'2026-11-02',label:X('Show the website design to Priya','प्रिया को वेबसाइट डिज़ाइन दिखाना है','प्रियांना वेबसाइट डिझाइन दाखवायचे','ప్రియాకు వెబ్‌సైట్ డిజైన్ చూపించాలి','பிரியாவுக்கு இணையதள வடிவமைப்பைக் காட்ட வேண்டும்','ಪ್ರಿಯಾಗೆ ವೆಬ್‌ಸೈಟ್ ವಿನ್ಯಾಸ ತೋರಿಸಬೇಕು'),kind:'meeting',status:'agreed'});
+  d5.dates.push({date:'2026-10-26',label:X('Sign the paper board agreement','पेपर बोर्ड समझौते पर साइन करना है','पेपर बोर्ड करारावर सही करायची','పేపర్ బోర్డు ఒప్పందంపై సంతకం చేయాలి','காகித அட்டை ஒப்பந்தத்தில் கையொப்பமிட வேண்டும்','ಪೇಪರ್ ಬೋರ್ಡ್ ಒಪ್ಪಂದಕ್ಕೆ ಸಹಿ ಮಾಡಬೇಕು'),kind:'deadline',status:'proposed'});
   S.deals=[d5,d1,d4,d2,d3];
   S.samples=[JSON.parse(JSON.stringify(d5)),JSON.parse(JSON.stringify(d1))];
   ['mr','te','ta','kn'].forEach(lg=>SEED_TR.en.forEach((e,i)=>{ if(!S.tr[lg][e]) S.tr[lg][e]=SEED_TR[lg][i]; }));
@@ -447,8 +457,183 @@ async function ensureTr(){
   ui.tr.failed=failed; ui.tr.running=false; render();
 }
 
+
+/* ---------- snip tool ----------
+   A floating button that stays on every screen. It grabs a part of the screen (desktop: screen share + crop),
+   a screenshot file, or whatever is on the clipboard, and files it as evidence on a deal in one go.
+   On desktop Chrome and Edge it can pop out into a small always-on-top window (Document Picture-in-Picture),
+   so it floats over WhatsApp Web or any other app. */
+const SN={open:false,dealId:null,status:null,msg:'',recId:null,stream:null,video:null,pip:null,pending:null,pos:null,doneT:null};
+const canScreen=()=>!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+const canPip=()=>'documentPictureInPicture' in window;
+function snipDeals(){ return isLawyer()?[]:myDeals(); }
+function snipTarget(){ const ds=snipDeals(); if(SN.dealId&&ds.some(d=>d.id===SN.dealId)) return SN.dealId; if(ui.view==='deal'&&ui.dealId&&ds.some(d=>d.id===ui.dealId)) return ui.dealId; return ds[0]?ds[0].id:null; }
+function snipRootEl(){ let r=document.getElementById('snipRoot'); if(!r){ r=document.createElement('div'); r.id='snipRoot'; document.body.appendChild(r); bindSnip(document); } return r; }
+function snipPos(){ if(SN.pos) return SN.pos; try{ const p=JSON.parse(localStorage.getItem('draftit.snipPos')||'null'); if(p&&typeof p.r==='number') return (SN.pos=p); }catch(e){} return (SN.pos={r:16,b:96}); }
+function snipStatusHtml(){
+  if(SN.status==='busy') return `<div class="snip-status busy" role="status"><span class="spin"></span><span>${esc(SN.msg||t('snipUploading'))}</span></div>`;
+  if(SN.status==='done') return `<div class="snip-status ok" role="status"><span class="tick">${ic('check',20)}</span><span class="stack-s" style="gap:0"><b>${esc(t('snipUploaded'))}</b><span class="tiny">${esc(SN.msg)}</span></span>${SN.recId?`<button class="link" data-snip="view">${esc(t('snipView'))}</button>`:''}</div>`;
+  if(SN.status==='err') return `<div class="snip-status bad" role="alert">${ic('tri',18)}<span>${esc(SN.msg)}</span></div>`;
+  return '';
+}
+function snipPanelHtml(inPip){
+  const ds=snipDeals(), tg=snipTarget();
+  let h=`<div class="snip-head"><span class="snip-ico sm">${ic('snip',18)}</span><b class="grow">${esc(t('snipTool'))}</b>${inPip?'':`<button class="ibtn" data-snip="close" aria-label="${esc(t('close'))}">${ic('x',20)}</button>`}</div>`;
+  if(!ds.length) return h+`<p class="small">${esc(t('snipNoDeal'))}</p><button class="btn full" data-snip="newDeal">${ic('plus',18)} ${esc(t('newDeal'))}</button>`;
+  h+=`<label class="field">${esc(t('snipTo'))}<select class="sel" data-snip-deal>${ds.map(d=>`<option value="${d.id}" ${d.id===tg?'selected':''}>${esc(tx(d.title))}</option>`).join('')}</select></label>`;
+  if(SN.pending&&SN.pending.length) h+=`<div class="note"><span>${esc(t('snipShared',{n:SN.pending.length}))}</span></div><button class="btn full" data-snip="sendPending">${ic('upload',18)} ${esc(t('snipUploadNow'))}</button>`;
+  h+=`<div class="snip-acts">`;
+  if(canScreen()) h+=`<button class="btn" data-snip="screen">${ic('snip',18)} ${esc(t(SN.stream?'snipAgain':'snipScreen'))}</button>`;
+  h+=`<label class="btn ${canScreen()?'sec':''}">${ic('img',18)} ${esc(t('snipPick'))}<input type="file" accept="image/*" multiple hidden data-snip-file></label>`;
+  h+=`<button class="btn sec" data-snip="paste">${ic('paste',18)} ${esc(t('snipPaste'))}</button>`;
+  h+=`</div>`;
+  h+=snipStatusHtml();
+  if(!SAMPLE) h+=`<p class="tiny">${esc(t('snipNoAi'))}</p>`;
+  if(!inPip){
+    h+=`<div class="snip-foot">`;
+    if(canPip()&&!SN.pip) h+=`<button class="link" data-snip="pip">${ic('pin',16)} ${esc(t('snipPop'))}</button>`;
+    if(SN.stream) h+=`<button class="link" data-snip="stopShare">${esc(t('snipStopShare'))}</button>`;
+    h+=`<button class="link danger-link" data-snip="off">${esc(t('snipRemove'))}</button></div>`;
+    h+=`<p class="tiny">${esc(t(canScreen()?'snipTipDesk':'snipTipPhone'))}</p>`;
+  }
+  return h;
+}
+function renderSnip(){
+  if(!S||!document.body) return;
+  const root=snipRootEl(), on=S.settings.snip&&acct()&&ui.view!=='auth'&&!isLawyer();
+  if(SN.pip&&!SN.pip.closed) renderPip();
+  if(!on){ root.innerHTML=''; return; }
+  const p=snipPos(), st=SN.status;
+  const fab=`<button id="snipFab" class="snip-fab ${st||''} ${SN.open?'open':''}" style="right:${p.r}px;bottom:${p.b}px" data-snip="fab" aria-label="${esc(t('snipTool'))}" aria-expanded="${SN.open}">${st==='busy'?'<span class="spin"></span>':st==='done'?ic('check',24):ic('snip',24)}<span class="fab-l">${esc(st==='busy'?t('snipUploadingShort'):st==='done'?t('snipUploaded'):t('snipShort'))}</span></button>`;
+  const panel=SN.open&&!(SN.pip&&!SN.pip.closed)?`<div class="snip-scrim" data-snip="close"></div><section class="snip-panel" role="dialog" aria-label="${esc(t('snipTool'))}">${snipPanelHtml(false)}</section>`:'';
+  root.innerHTML=panel+fab;
+}
+function snipSet(status,msg,recId){ SN.status=status; SN.msg=msg||''; SN.recId=recId||null; clearTimeout(SN.doneT); if(status==='done') SN.doneT=setTimeout(()=>{ if(SN.status==='done'){ SN.status=null; renderSnip(); } },6000); renderSnip(); }
+/* events: one delegated handler per document (main page and the pop-out window) */
+function bindSnip(doc){
+  let drag=null;
+  doc.addEventListener('pointerdown',e=>{ const f=e.target.closest&&e.target.closest('#snipFab'); if(!f) return; drag={x:e.clientX,y:e.clientY,p:Object.assign({},snipPos()),moved:false}; try{ f.setPointerCapture(e.pointerId); }catch(err){} });
+  doc.addEventListener('pointermove',e=>{ if(!drag) return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>6) drag.moved=true; if(!drag.moved) return; const f=doc.getElementById('snipFab'); if(!f) return; const W=doc.defaultView.innerWidth, H=doc.defaultView.innerHeight; SN.pos={r:Math.max(4,Math.min(W-f.offsetWidth-4,drag.p.r-dx)),b:Math.max(4,Math.min(H-f.offsetHeight-4,drag.p.b-dy))}; f.style.right=SN.pos.r+'px'; f.style.bottom=SN.pos.b+'px'; });
+  doc.addEventListener('pointerup',()=>{ if(drag&&drag.moved){ try{ localStorage.setItem('draftit.snipPos',JSON.stringify(SN.pos)); }catch(e){} SN.justDragged=true; setTimeout(()=>{ SN.justDragged=false; },50); } drag=null; });
+  doc.addEventListener('click',async e=>{ const a=e.target.closest&&e.target.closest('[data-snip]'); if(!a) return; e.stopPropagation(); await snipAct(a.dataset.snip,doc); },true);
+  doc.addEventListener('change',async e=>{ const el=e.target;
+    if(el.matches&&el.matches('[data-snip-deal]')){ SN.dealId=el.value; return; }
+    if(el.matches&&el.matches('[data-snip-file]')){ const files=[...el.files]; el.value=''; for(const f of files) await snipUpload(f,'file',f.name); } },true);
+  doc.addEventListener('paste',async e=>{ if(!S.settings.snip||!(SN.open||doc!==document)) return; const items=[...(e.clipboardData&&e.clipboardData.items||[])], img=items.find(i=>/^image\//.test(i.type)); if(img){ e.preventDefault(); await snipUpload(img.getAsFile(),'paste'); return; } const tx2=e.clipboardData&&e.clipboardData.getData('text/plain'); if(tx2&&tx2.trim()&&!/^(INPUT|TEXTAREA)$/.test((e.target.tagName||''))){ e.preventDefault(); await snipText(tx2); } });
+  doc.addEventListener('keydown',e=>{ if(e.key==='Escape'&&SN.open&&doc===document&&!doc.querySelector('.crop-wrap')){ SN.open=false; renderSnip(); } });
+}
+async function snipAct(k,doc){
+  const sel=doc.querySelector('[data-snip-deal]'); if(sel) SN.dealId=sel.value;
+  switch(k){
+    case 'fab': if(SN.justDragged) return; if(SN.pip&&!SN.pip.closed){ SN.pip.focus(); return; } SN.open=!SN.open; renderSnip(); break;
+    case 'close': SN.open=false; renderSnip(); break;
+    case 'off': S.settings.snip=false; save(); SN.open=false; stopShare(); if(SN.pip&&!SN.pip.closed) SN.pip.close(); renderSnip(); render(); toast(t('snipOffToast')); break;
+    case 'newDeal': SN.open=false; renderSnip(); document.querySelector('[data-act="newDeal"]')?document.querySelector('[data-act="newDeal"]').click():(ui.view='home',render()); break;
+    case 'screen': await snipScreen(doc); break;
+    case 'paste': await snipPaste(); break;
+    case 'pip': await openPip(); break;
+    case 'stopShare': stopShare(); renderSnip(); break;
+    case 'sendPending': { const p=SN.pending||[]; SN.pending=null; for(const it of p){ if(it.text!=null) await snipText(it.text,it.name); else await snipUpload(it.blob,'share',it.name); } break; }
+    case 'view': { const id=SN.dealTo||snipTarget(); SN.open=false; if(SN.pip&&!SN.pip.closed) window.focus(); ui.view='deal'; ui.dealId=id; ui.tab='evidence'; window.scrollTo(0,0); render(); break; }
+  }
+}
+function stopShare(){ if(SN.stream){ SN.stream.getTracks().forEach(tr=>tr.stop()); } SN.stream=null; SN.video=null; }
+async function snipScreen(doc){
+  try{
+    if(!SN.stream||!SN.stream.active){
+      SN.stream=await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'window',frameRate:5},audio:false,selfBrowserSurface:'exclude',surfaceSwitching:'include'});
+      SN.stream.getVideoTracks()[0].addEventListener('ended',()=>{ SN.stream=null; SN.video=null; renderSnip(); });
+      const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.srcObject=SN.stream; await v.play(); SN.video=v;
+      await new Promise(r=>setTimeout(r,350));
+    }
+    const v=SN.video; if(!v.videoWidth) await new Promise(r=>setTimeout(r,400));
+    const c=document.createElement('canvas'); c.width=v.videoWidth; c.height=v.videoHeight; c.getContext('2d').drawImage(v,0,0);
+    renderSnip();
+    const blob=await cropUI(doc,c); if(!blob) return;
+    await snipUpload(blob,'screen');
+  }catch(err){ if(err&&err.name==='NotAllowedError') snipSet('err',t('snipDenied')); else snipSet('err',t('snipScreenFail')); }
+}
+async function snipPaste(){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.read){ const items=await navigator.clipboard.read(); for(const it of items){ const ty=it.types.find(x=>/^image\//.test(x)); if(ty){ await snipUpload(await it.getType(ty),'paste'); return; } } }
+    if(navigator.clipboard&&navigator.clipboard.readText){ const tx2=await navigator.clipboard.readText(); if(tx2&&tx2.trim()){ await snipText(tx2); return; } }
+    snipSet('err',t('snipClipEmpty'));
+  }catch(err){ snipSet('err',t('snipClipBlocked')); }
+}
+/* crop: drag a box over the captured frame; Enter or the button uploads, Esc cancels */
+function cropUI(doc,canvas){
+  return new Promise(res=>{
+    const win=doc.defaultView; let restore=null;
+    if(doc!==document&&win.resizeTo){ restore=[win.outerWidth,win.outerHeight]; try{ win.resizeTo(Math.min(1000,screen.availWidth),Math.min(720,screen.availHeight)); }catch(e){} }
+    const w=doc.createElement('div'); w.className='crop-wrap';
+    w.innerHTML=`<div class="crop-bar"><b class="grow">${esc(t('cropTitle'))}</b><button class="btn sec sm" data-c="cancel">${esc(t('cancel'))}</button><button class="btn sec sm" data-c="all">${esc(t('cropAll'))}</button><button class="btn sm" data-c="ok" disabled>${ic('upload',16)} ${esc(t('cropUpload'))}</button></div><div class="crop-stage"><img alt=""><div class="crop-box" hidden></div></div><p class="crop-hint tiny">${esc(t('cropHint'))}</p>`;
+    doc.body.appendChild(w);
+    const img=w.querySelector('img'), box=w.querySelector('.crop-box'), ok=w.querySelector('[data-c="ok"]'), stage=w.querySelector('.crop-stage');
+    img.src=canvas.toDataURL('image/png'); let sel=null, st=null;
+    const pt=e=>{ const r=img.getBoundingClientRect(); return {x:Math.max(0,Math.min(r.width,e.clientX-r.left)),y:Math.max(0,Math.min(r.height,e.clientY-r.top)),r}; };
+    const draw=()=>{ if(!sel){ box.hidden=true; return; } const ir=img.getBoundingClientRect(), sr=stage.getBoundingClientRect(); box.hidden=false; Object.assign(box.style,{left:(ir.left-sr.left+sel.x)+'px',top:(ir.top-sr.top+sel.y)+'px',width:sel.w+'px',height:sel.h+'px'}); };
+    stage.addEventListener('pointerdown',e=>{ const p=pt(e); st=p; sel={x:p.x,y:p.y,w:0,h:0}; try{ stage.setPointerCapture(e.pointerId); }catch(er){} draw(); });
+    stage.addEventListener('pointermove',e=>{ if(!st) return; const p=pt(e); sel={x:Math.min(st.x,p.x),y:Math.min(st.y,p.y),w:Math.abs(p.x-st.x),h:Math.abs(p.y-st.y)}; draw(); });
+    stage.addEventListener('pointerup',()=>{ st=null; ok.disabled=!(sel&&sel.w>8&&sel.h>8); });
+    const done=b=>{ doc.removeEventListener('keydown',kd,true); w.remove(); if(restore){ try{ win.resizeTo(restore[0],restore[1]); }catch(e){} } res(b); };
+    const cut=whole=>{ const r=img.getBoundingClientRect(), k=canvas.width/r.width; const s2=whole||!sel?{x:0,y:0,w:canvas.width,h:canvas.height}:{x:sel.x*k,y:sel.y*k,w:sel.w*k,h:sel.h*k}; const o=document.createElement('canvas'); o.width=Math.max(1,Math.round(s2.w)); o.height=Math.max(1,Math.round(s2.h)); o.getContext('2d').drawImage(canvas,s2.x,s2.y,s2.w,s2.h,0,0,o.width,o.height); o.toBlob(b=>done(b),'image/png'); };
+    const kd=e=>{ if(e.key==='Escape'){ e.preventDefault(); e.stopPropagation(); done(null); } if(e.key==='Enter'){ e.preventDefault(); cut(!(sel&&sel.w>8)); } };
+    doc.addEventListener('keydown',kd,true);
+    w.addEventListener('click',e=>{ const b=e.target.closest('[data-c]'); if(!b) return; e.stopPropagation(); if(b.dataset.c==='cancel') done(null); else cut(b.dataset.c==='all'); });
+  });
+}
+async function snipUpload(blob,how,name){
+  const id0=snipTarget(), d=deal(id0); if(!d||!blob) return snipSet('err',t('snipNoDeal'));
+  SN.dealTo=d.id; snipSet('busy',t('snipUploadingTo',{deal:tx(d.title)}));
+  try{
+    const buf=new Uint8Array(await blob.arrayBuffer()), fileHash=await sha256Bytes(buf), url=await readAs(blob,'url'), thumb=await shrink(url,1000);
+    let text='', method='image';
+    if(SAMPLE){ SN.msg=t('snipReading'); renderSnip(); try{ text=await ocrBlobs([blob]); method='ocr'; }catch(e){ text=''; } }
+    const up=nowISO(), pm=text?parseChat(text):[], messages=pm.length?pm:text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:null,sender:'',text:p.trim()})).filter(m=>m.text);
+    const stamp=up.slice(0,16).replace('T',' ').replace(':','');
+    const rec=await mkRecord({id:'CR-'+(++S.counter),dealId:d.id,type:'photo',name:name||('Snip '+stamp+'.png'),uploadedAt:up,rawText:text,messages,method,fileHash,media:{kind:'image',thumb},snip:how});
+    d.records.push(rec); save();
+    snipSet('done',`${tx(d.title)} · ${rec.id}`,rec.id); if(!SN.open&&!(SN.pip&&!SN.pip.closed)) toast(t('snipToast',{deal:tx(d.title)}));
+    if(ui.view==='deal'&&ui.dealId===d.id){ ui.keep=true; render(); }
+    if(text) analyseDeal(d);
+  }catch(err){ snipSet('err',t('snipFail')); }
+}
+async function snipText(text,name){
+  const d=deal(snipTarget()); if(!d) return snipSet('err',t('snipNoDeal'));
+  SN.dealTo=d.id; snipSet('busy',t('snipUploadingTo',{deal:tx(d.title)}));
+  try{
+    const pm=parseChat(text), up=nowISO(), messages=pm.length?pm:text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:null,sender:'',text:p.trim()})).filter(m=>m.text);
+    const rec=await mkRecord({id:'CR-'+(++S.counter),dealId:d.id,type:pm.length?'paste':'paste',name:name||'Pasted chat',uploadedAt:up,rawText:text,messages,method:'verbatim',snip:'text'});
+    d.records.push(rec); save(); snipSet('done',`${tx(d.title)} · ${rec.id}`,rec.id); if(!SN.open&&!(SN.pip&&!SN.pip.closed)) toast(t('snipToast',{deal:tx(d.title)}));
+    if(ui.view==='deal'&&ui.dealId===d.id){ ui.keep=true; render(); }
+    analyseDeal(d);
+  }catch(err){ snipSet('err',t('snipFail')); }
+}
+/* pop-out: a small always-on-top window that keeps the snip panel above other apps */
+async function openPip(){
+  try{
+    const pw=await window.documentPictureInPicture.requestWindow({width:340,height:440});
+    document.querySelectorAll('style,link[rel="stylesheet"]').forEach(n=>pw.document.head.appendChild(n.cloneNode(true)));
+    pw.document.documentElement.className=document.documentElement.className; pw.document.documentElement.lang=document.documentElement.lang;
+    pw.document.body.className='pip-body'; SN.pip=pw; SN.open=false; bindSnip(pw.document);
+    pw.addEventListener('pagehide',()=>{ SN.pip=null; renderSnip(); });
+    renderSnip();
+  }catch(err){ snipSet('err',t('snipPopFail')); }
+}
+function renderPip(){ const pw=SN.pip; if(!pw||pw.closed) return; if(pw.document.querySelector('.crop-wrap')) return; let el=pw.document.getElementById('pipRoot'); if(!el){ el=pw.document.createElement('section'); el.id='pipRoot'; el.className='snip-panel in-pip'; pw.document.body.appendChild(el); } el.innerHTML=snipPanelHtml(true); }
+/* files shared to the installed app (Android share sheet) arrive through the service worker */
+async function takeShared(){
+  if(!/[?&]share=1/.test(location.search)) return;
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  try{
+    const c=await caches.open('draftit-share'), keys=await c.keys(), out=[];
+    for(const k of keys){ const r=await c.match(k), ty=r.headers.get('content-type')||'', nm=decodeURIComponent(r.headers.get('x-name')||''); if(/^image\//.test(ty)) out.push({blob:await r.blob(),name:nm}); else if(/^text\//.test(ty)||/\.txt$/i.test(nm)) out.push({text:await r.text(),name:nm||'Shared chat'}); await c.delete(k); }
+    if(out.length&&acct()&&!isLawyer()){ S.settings.snip=true; save(); SN.pending=out; SN.open=true; render(); }
+  }catch(e){}
+}
+
 /* ---------- icons ---------- */
-const I={home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cal:'<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',plus:'<path d="M12 5v14M5 12h14"/>',layers:'<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',scale:'<path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',back:'<path d="M15 18l-6-6 6-6"/>',fwd:'<path d="M9 18l6-6-6-6"/>',chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/>',cam:'<path d="M4 7h3l2-2.5h6L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/>',paste:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/>',speaker:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>',stopI:'<rect x="7" y="7" width="10" height="10" rx="1.5"/>',shield:'<path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',down:'<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',pen:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',tri:'<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',excl:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/>',truck:'<path d="M2.5 6h11v10h-11zM13.5 9.5h4l3 3.5V16h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',coin:'<circle cx="12" cy="12" r="8.5"/><path d="M9 8h6M9 11h6M13 8c2.5 0 2.5 3 0 3H9l4.5 5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',send:'<path d="M4 12 20 4l-6 16-3-7z"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L11.5 7"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/>',doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',wallet:'<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/>',stamp:'<path d="M9 3h6v6l3 4H6l3-4zM5 17h14v3H5z"/>'};
+const I={shop:'<path d="M3 9.5 4.5 4h15L21 9.5"/><path d="M3 9.5a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M4.5 12v8.5h15V12M10 20.5v-5h4v5"/>',bag:'<path d="M5 8h14l-1 12.5H6z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/>',logout:'<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/>',snip:'<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1 20 20M8.1 15.9 20 4"/>',x:'<path d="M6 6l12 12M18 6 6 18"/>',monitor:'<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',img:'<rect x="3" y="3.5" width="18" height="17" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 16-5-5-9 9"/>',pin:'<path d="M12 17v5M8 3h8l-1 6 3 4H6l3-4z"/>',home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',cal:'<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',plus:'<path d="M12 5v14M5 12h14"/>',layers:'<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',scale:'<path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',back:'<path d="M15 18l-6-6 6-6"/>',fwd:'<path d="M9 18l6-6-6-6"/>',chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/>',mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',file:'<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M8.5 13h7M8.5 17h5"/>',cam:'<path d="M4 7h3l2-2.5h6L17 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/>',paste:'<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6"/>',speaker:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/>',stopI:'<rect x="7" y="7" width="10" height="10" rx="1.5"/>',shield:'<path d="M12 3 4.5 6v6c0 4.5 3.2 7.8 7.5 9 4.3-1.2 7.5-4.5 7.5-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',down:'<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',pen:'<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/>',copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',tri:'<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.01"/>',info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',excl:'<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/>',truck:'<path d="M2.5 6h11v10h-11zM13.5 9.5h4l3 3.5V16h-7z"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/>',coin:'<circle cx="12" cy="12" r="8.5"/><path d="M9 8h6M9 11h6M13 8c2.5 0 2.5 3 0 3H9l4.5 5"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',send:'<path d="M4 12 20 4l-6 16-3-7z"/>',link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L11.5 7"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1.5-1.5"/>',doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 12h7M9 16h7"/>',spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',wallet:'<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 10h18"/>',stamp:'<path d="M9 3h6v6l3 4H6l3-4zM5 17h14v3H5z"/>'};
 const ic=(n,s)=>`<svg width="${s||22}" height="${s||22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
 const recName=r=>r.type==='paste'?t('src_paste'):r.type==='room'?t('chatRoom'):r.name;
 const REC_ICON={whatsapp:'chat',paste:'paste',voice:'mic',pdf:'file',photo:'cam',room:'chat'};
@@ -460,9 +645,12 @@ function render(){
   document.documentElement.lang=S.settings.lang; applyTextSize(); stopRead();
   if(!acct()&&ui.view!=='auth'&&ui.view!=='data'&&!(ui.view==='room'&&ui.guest)){ ui.view='auth'; }
   const y=window.scrollY;
-  if(ui.view==='auth'){ app.innerHTML=renderAuth(); return; }
+  if(document.body) document.body.dataset.view=ui.view;
+  app.className='app v-'+ui.view+(acct()&&ui.view!=='auth'&&!(ui.view==='room'&&ui.guest)?' signed':'');
+  if(ui.view==='auth'){ app.innerHTML=renderAuth(); renderSnip(); return; }
   const focusRoom=document.activeElement&&document.activeElement.id==='roomInput';
-  app.innerHTML=renderTop()+trBar()+(ui.view==='home'&&!isLawyer()?renderBand():'')+(ui.view==='deal'?renderTabs():'')+`<main class="gut ${ui.view==='room'?'room-main':''}" id="main">${renderView()}</main>`+(ui.view==='room'||!acct()?'':renderNav())+(ui.tut!=null?renderTutorial():'');
+  app.innerHTML=renderTop()+trBar()+(ui.view==='home'&&!isLawyer()?renderBand():'')+(ui.view==='deal'?renderTabs():'')+`<main class="gut ${ui.view==='room'?'room-main':''}" id="main">${renderView()}</main>`+(!acct()||(ui.view==='room'&&ui.guest)?'':renderNav())+(ui.tut!=null?renderTutorial():'');
+  renderSnip();
   if(ui.keep) window.scrollTo(0,y); ui.keep=false;
   if(ui.view==='room'){ const box=$('#roomMsgs'); if(box) box.scrollTop=box.scrollHeight; window.scrollTo(0,document.body.scrollHeight); const ri=$('#roomInput'); if(ri&&focusRoom){ ri.focus(); ri.setSelectionRange(ri.value.length,ri.value.length); } }
   if(ui.view==='settings'){ const r=$('#setRate'); if(r) r.addEventListener('input',()=>{ S.settings.rate=+r.value; $('#rateVal').textContent=S.settings.rate.toFixed(2)+'×'; save(); }); }
@@ -475,7 +663,9 @@ function trBar(){
   if(ui.tr.failed) return `<div class="trbar gut row between"><span>${esc(t('trFail'))}</span><button class="link" data-act="retryTr">${esc(t('tryAgain'))}</button></div>`;
   return '';
 }
-function applyTextSize(){ const z=(S&&S.settings.textSize)||(()=>{ try{ return localStorage.getItem('draftit.ts'); }catch(e){ return ''; } })()||'m'; const h=document.documentElement; h.classList.toggle('ts-l',z==='l'); h.classList.toggle('ts-xl',z==='xl'); }
+function applyLayout(){ const z=(S&&S.settings.layout)||(()=>{ try{ return localStorage.getItem('draftit.lay'); }catch(e){ return ''; } })()||'auto'; document.documentElement.classList.toggle('lay-phone',z==='phone'); }
+function applyTextSize(){ applyLayout(); const z=(S&&S.settings.textSize)||(()=>{ try{ return localStorage.getItem('draftit.ts'); }catch(e){ return ''; } })()||'m'; const h=document.documentElement; h.classList.toggle('ts-l',z==='l'); h.classList.toggle('ts-xl',z==='xl'); }
+const layoutSeg=()=>{ const z=S.settings.layout||'auto'; return `<div class="stack-s"><b>${esc(t('layoutLbl'))}</b><div class="seg ts-seg" role="group" aria-label="${esc(t('layoutLbl'))}">${[['auto','layAuto'],['phone','layPhone']].map(([k,l])=>`<button aria-pressed="${z===k}" data-act="setLayout" data-v="${k}">${esc(t(l))}</button>`).join('')}</div><span class="tiny">${esc(t('layoutNote'))}</span></div>`; };
 const textSizeSeg=()=>{ const z=S.settings.textSize||'m'; return `<div class="stack-s"><b>${esc(t('textSize'))}</b><div class="seg ts-seg" role="group" aria-label="${esc(t('textSize'))}">${[['m','tsM'],['l','tsL'],['xl','tsXL']].map(([k,l])=>`<button aria-pressed="${z===k}" data-act="setTextSize" data-v="${k}">${esc(t(l))}</button>`).join('')}</div></div>`; };
 function renderTop(){
   const SHORT={en:'EN',hi:'हिं',mr:'मरा',te:'తె',ta:'த',kn:'ಕ'}, compact=ui.view==='deal'||ui.view==='room';
@@ -491,8 +681,10 @@ function renderTop(){
 function renderNav(){
   const L=isLawyer(), cur=ui.view==='deal'?'home':ui.view;
   const b=(v,i,l)=>`<button data-act="go" data-v="${v}" ${cur===v?'aria-current="page"':''}>${ic(i)}<span>${esc(l)}</span></button>`;
-  if(L) return `<nav class="nav" aria-label="Main"><div class="nav-in n3">${b('home','home',t('reqQueue'))}${b('revisions','layers',t('approvals'))}${b('earnings','wallet',t('earnings'))}</div></nav>`;
-  return `<nav class="nav" aria-label="Main"><div class="nav-in">${b('home','home',t('home'))}${b('calendar','cal',t('calendar'))}<button data-act="addAny"><span class="plus">${ic('plus',22)}</span><span>${esc(t('add'))}</span></button>${b('revisions','layers',t('revisions'))}${b('lawyer','scale',t('lawyer'))}</div></nav>`;
+  const a=acct(), brand=`<div class="nav-brand desk">${ic('shield',24)}<span>Draft It</span></div>`;
+  const foot=`<div class="nav-foot desk">${L?'':`<button data-act="${S.settings.snip?'snipOpen':'snipToggle'}" class="nav-snip">${ic('snip')}<span>${esc(t(S.settings.snip?'snipTool':'snipAdd'))}</span></button>`}${b('settings','gear',t('settings'))}<div class="nav-me"><span class="avatar">${esc((a&&a.name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())}</span><span class="stack-s" style="gap:0;min-width:0"><b>${esc(a?a.name:'')}</b><span class="tiny">${esc(t(a&&a.role==='lawyer'?'role_lawyer':a&&a.role==='buyer'?'buyer':'seller'))}</span></span></div></div>`;
+  if(L) return `<nav class="nav" aria-label="Main"><div class="nav-in n3">${brand}${b('home','home',t('reqQueue'))}${b('revisions','layers',t('approvals'))}${b('earnings','wallet',t('earnings'))}${foot}</div></nav>`;
+  return `<nav class="nav" aria-label="Main"><div class="nav-in">${brand}${b('home','home',t('home'))}${b('calendar','cal',t('calendar'))}<button data-act="addAny" class="nav-add"><span class="plus">${ic('plus',22)}</span><span>${esc(t('add'))}</span></button>${b('revisions','layers',t('revisions'))}${b('lawyer','scale',t('lawyer'))}${foot}</div></nav>`;
 }
 function renderView(){ const L=isLawyer(); switch(ui.view){ case 'deal': return renderDeal(); case 'calendar': return renderCalendar(); case 'revisions': return L?renderApproved():renderRevisions(); case 'lawyer': return renderLawyer(); case 'settings': return renderSettings(); case 'data': return renderData(); case 'room': return renderRoom(); case 'earnings': return renderEarnings(); default: return L?renderLawyerHome():renderHome(); } }
 
@@ -500,15 +692,24 @@ function renderView(){ const L=isLawyer(); switch(ui.view){ case 'deal': return 
 function renderBand(){ return `<section class="band gut"><p class="hi">${esc(t('hello',{name:first(S.settings.userName)}))}</p><h1>${esc(t('needReply',{n:openFlags()}))}</h1><p class="sub">${esc(t('needReplySub'))}</p></section>`; }
 function renderHome(){
   const nx=allEvents().filter(e=>e.status!=='done'&&dayDiff(e.date)>=0)[0];
-  let h='';
-  if(nx) h+=`<button class="card tap ev" data-act="openDeal" data-id="${nx.deal.id}"><span class="d"><b>${esc(fmtD(nx.date,{day:'numeric'}))}</b><span>${esc(fmtD(nx.date,{month:'short'}))}</span></span><span class="stack-s" style="gap:2px"><span class="lbl">${esc(t('nextUp'))} · ${esc(relDay(nx.date))}</span><span style="font-weight:700">${esc(tx(nx.label))}</span><span class="tiny">${esc(tx(nx.deal.title))} · ${esc(t(nx.status==='agreed'?'agreed':'proposed'))}</span></span></button>`;
-  h+=`<section class="stack"><div class="sec-h"><h2 class="h2">${esc(t('myDeals'))}</h2><button class="btn sec sm" data-act="newDeal">${ic('plus',16)} ${esc(t('newDeal'))}</button></div><ul class="list card">`;
+  const soon=calEvents().filter(e=>e.status!=='done'&&dayDiff(e.date)>=0&&dayDiff(e.date)<=21).slice(0,5);
+  let side='';
+  if(nx) side+=`<button class="card tap ev" data-act="openDeal" data-id="${nx.deal.id}"><span class="d"><b>${esc(fmtD(nx.date,{day:'numeric'}))}</b><span>${esc(fmtD(nx.date,{month:'short'}))}</span></span><span class="stack-s" style="gap:2px"><span class="lbl">${esc(t('nextUp'))} · ${esc(relDay(nx.date))}</span><span style="font-weight:700">${esc(tx(nx.label))}</span><span class="tiny">${esc(tx(nx.deal.title))} · ${esc(t(nx.status==='agreed'?'agreed':'proposed'))}</span></span></button>`;
+  side+=snipCard();
+  if(soon.length) side+=`<section class="stack-s desk"><div class="sec-h"><h2 class="h2">${esc(t('comingUp'))}</h2><button class="btn sec sm" data-act="go" data-v="calendar">${ic('cal',16)} ${esc(t('calendar'))}</button></div><ul class="list card">${soon.map(evRow).join('')}</ul></section>`;
+  let h=`<div class="home-grid"><aside class="home-side stack">${side}</aside><div class="home-main stack">`;
+  h+=`<section class="stack"><div class="sec-h"><h2 class="h2">${esc(t('myDeals'))}</h2><button class="btn sec sm" data-act="newDeal">${ic('plus',16)} ${esc(t('newDeal'))}</button></div><ul class="list card deals">`;
   const ds=myDeals();
   ds.forEach(d=>{ const c=confidence(d), st=dealState(d), bad=standards(d).filter(x=>x.status==='fail').length;
     h+=`<li><button class="tap deal-row" data-act="openDeal" data-id="${d.id}"><span class="row between" style="align-items:flex-start"><span class="t">${esc(tx(d.title))}</span><span class="pct">${esc(t('settledPct',{n:c.total}))}</span></span><span class="small muted">${esc(d.parties[1].org)}${d.value?' · '+rupee(d.value):''}</span><span class="bar"><i style="width:${c.total}%"></i></span><span class="row wrap" style="gap:6px"><span class="chip ${st.chip}">${esc(st.label)}</span>${st.pend?`<span class="chip c-warn">${esc(t('changeWaiting',{n:st.pend}))}</span>`:''}${bad?`<span class="chip c-bad">${ic('tri',12)} ${esc(t('nProblems',{n:bad}))}</span>`:''}${d.report?`<span class="chip c-bad">${esc(t('reportedTag'))}</span>`:''}</span></button></li>`; });
   if(!ds.length) h+=`<li class="pad stack-s"><p class="small muted">${esc(t('emptyDeals'))}</p><div class="row wrap"><button class="btn sm" data-act="newDeal">${ic('plus',16)} ${esc(t('newDeal'))}</button><button class="btn sec sm" data-act="demoLogin" data-id="u_ravi_4821">${esc(t('seeSamples'))}</button></div></li>`;
-  h+=`</ul></section>`;
+  h+=`</ul></section></div></div>`;
   return h;
+}
+function snipCard(){
+  if(isLawyer()) return '';
+  if(S.settings.snip) return `<button class="card tap snip-card on" data-act="snipOpen"><span class="snip-ico">${ic('snip',22)}</span><span class="stack-s grow" style="gap:2px;text-align:left"><b>${esc(t('snipOnTitle'))}</b><span class="tiny">${esc(t('snipOnSub'))}</span></span>${ic('fwd',18)}</button>`;
+  return `<section class="card snip-card"><span class="snip-ico">${ic('snip',22)}</span><span class="stack-s grow" style="gap:2px"><b>${esc(t('snipTool'))}</b><span class="tiny">${esc(t('snipSub'))}</span></span><button class="btn sm" data-act="snipToggle">${ic('plus',16)} ${esc(t('snipAdd'))}</button></section>`;
 }
 
 /* ---------- deal ---------- */
@@ -625,27 +826,65 @@ function renderTrace(d){
 }
 
 /* ---------- calendar ---------- */
+/* fixed business dates every Indian small business deals with: GST returns, TDS, advance tax, national holidays, Diwali */
+const SYS_FIXED=[['01-26','hol_republic'],['08-15','hol_indep'],['10-02','hol_gandhi'],['12-25','hol_xmas']];
+const SYS_DATED=[['2026-11-08','hol_diwali']];
+let _sysCache=null;
+function sysEvents(){
+  if(_sysCache) return _sysCache; const out=[]; const pad=n=>String(n).padStart(2,'0');
+  for(let y=2025;y<=2028;y++){
+    for(let m=1;m<=12;m++){ const pm=new Date(Date.UTC(y,m-2,1)); const mon={m:new Intl.DateTimeFormat('en-IN',{month:'long',timeZone:'UTC'}).format(pm),mi:pm.getUTCMonth()};
+      out.push({id:`g1-${y}-${m}`,date:`${y}-${pad(m)}-11`,kind:'tax',key:'ev_gstr1',info:'evi_gst',pm:mon});
+      out.push({id:`g3-${y}-${m}`,date:`${y}-${pad(m)}-20`,kind:'tax',key:'ev_gstr3b',info:'evi_gst',pm:mon}); }
+    [['07-31','ev_tds1'],['10-31','ev_tds2'],['01-31','ev_tds3'],['05-31','ev_tds4']].forEach(([md,k])=>out.push({id:`tds-${y}-${md}`,date:`${y}-${md}`,kind:'tax',key:k,info:'evi_tds'}));
+    [['06-15','ev_adv1'],['09-15','ev_adv2'],['12-15','ev_adv3'],['03-15','ev_adv4']].forEach(([md,k])=>out.push({id:`adv-${y}-${md}`,date:`${y}-${md}`,kind:'tax',key:k,info:'evi_adv'}));
+    SYS_FIXED.forEach(([md,k])=>out.push({id:`h-${y}-${md}`,date:`${y}-${md}`,kind:'holiday',key:k,info:'evi_hol'}));
+  }
+  SYS_DATED.forEach(([d,k])=>out.push({id:'h-'+d,date:d,kind:'holiday',key:k,info:'evi_diwali'}));
+  return (_sysCache=out.map(e=>Object.assign(e,{sys:true,status:'agreed'})));
+}
+const monName=i=>new Intl.DateTimeFormat(bcp(),{month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(2024,i,1)));
+const evLabel=e=>e.sys?t(e.key,e.pm?{m:monName(e.pm.mi)}:{}):tx(e.label);
+const calEvents=()=>allEvents().concat(sysEvents()).sort((a,b)=>a.date.localeCompare(b.date)||(a.sys?1:0)-(b.sys?1:0));
+function evRow(e){
+  const d=`<span class="d ${e.sys?'d-'+e.kind:''}"><b>${esc(fmtD(e.date,{day:'numeric'}))}</b><span>${esc(fmtD(e.date,{month:'short'}))}</span></span>`;
+  if(e.sys) return `<li><button class="tap ev" data-act="sysEv" data-v="${e.id}">${d}<span class="stack-s" style="gap:3px"><b><i class="kd k-${e.kind}"></i>${esc(evLabel(e))}</b><span class="tiny">${esc(t(e.kind==='tax'?'k_tax':'k_holiday'))} · ${esc(relDay(e.date))}</span></span></button></li>`;
+  return `<li><button class="tap ev" data-act="openDeal" data-id="${e.deal.id}">${d}<span class="stack-s" style="gap:3px"><b><i class="kd k-${e.kind}"></i>${esc(tx(e.label))}</b><span class="tiny">${esc(tx(e.deal.title))} · ${esc(e.deal.parties[1].org)}</span><span class="row wrap" style="gap:6px">${e.status==='done'?`<span class="chip c-ok">${esc(t('done'))}</span>`:statusChip(e.status==='agreed'?'agreed':'proposed')}<span class="tiny">${esc(relDay(e.date))}</span></span></span></button></li>`;
+}
+function sysSheet(id){ const e=sysEvents().find(x=>x.id===id); if(!e) return;
+  openSheet(sheetHead(evLabel(e),esc(fmtD(e.date,{weekday:'long',day:'numeric',month:'long',year:'numeric'})))+`<div class="row" style="gap:12px;align-items:flex-start"><span class="ad-ico" style="background:${e.kind==='tax'?'var(--brand)':'#FCE7D2'};color:${e.kind==='tax'?'#fff':'#9A4A00'}">${ic(e.kind==='tax'?'doc':'cal',20)}</span><p class="sys-info">${esc(t(e.info))}</p></div><div id="sysInfo" hidden><p>${esc(evLabel(e))}</p><p>${esc(t(e.info))}</p></div>${sayBtn('sysInfo',{sel:'p'})}<p class="tiny">${esc(t('evi_check'))}</p>`); }
 function renderCalendar(){
-  const evs=allEvents();
-  if(!ui.calMonth){ const near=evs.find(e=>Math.abs(dayDiff(e.date))<=45); ui.calMonth=(near?near.date:todayYMD()).slice(0,7); }
+  const evs=calEvents(), mine=allEvents();
+  if(!ui.calMonth){ const near=mine.find(e=>Math.abs(dayDiff(e.date))<=45); ui.calMonth=(near?near.date:todayYMD()).slice(0,7); }
   const [y,m]=ui.calMonth.split('-').map(Number); const f=new Date(Date.UTC(y,m-1,1)), sw=(f.getUTCDay()+6)%7, dim=new Date(Date.UTC(y,m,0)).getUTCDate();
   const mn=new Intl.DateTimeFormat(bcp(),{month:'long',year:'numeric',timeZone:'UTC'}).format(f);
   const wd=[...Array(7)].map((_,i)=>new Intl.DateTimeFormat(bcp(),{weekday:'narrow',timeZone:'UTC'}).format(new Date(Date.UTC(2024,0,1+i))));
   const cells=Math.ceil((sw+dim)/7)*7, today=todayYMD(); let cs='';
-  for(let i=0;i<cells;i++){ const dt=new Date(Date.UTC(y,m-1,1-sw+i)), ymd=dt.toISOString().slice(0,10), inM=dt.getUTCMonth()===m-1, es=evs.filter(e=>e.date===ymd);
-    cs+=`<button class="${inM?'':'other'} ${ymd===today?'today':''}" aria-pressed="${ui.calDay===ymd}" data-act="calDay" data-v="${ymd}"><span>${new Intl.NumberFormat(bcp()).format(dt.getUTCDate())}</span><span class="dots">${es.slice(0,3).map(e=>`<i class="k-${e.kind}"></i>`).join('')}</span>${adFor(ymd)?`<span class="adpin" style="background:${adFor(ymd).tone};color:${adFor(ymd).ink}">${ic(adFor(ymd).icon,11)}</span>`:''}</button>`; }
-  let h=`<section class="card pad stack"><div class="row between"><button class="ibtn" data-act="calNav" data-v="-1" aria-label="‹">${ic('back')}</button><h1 class="h2">${esc(mn)}</h1><button class="ibtn" data-act="calNav" data-v="1" aria-label="›">${ic('fwd')}</button></div><div class="cal">${wd.map(w=>`<span class="wd">${esc(w)}</span>`).join('')}${cs}</div><div class="row wrap small muted" style="gap:14px">${['delivery','payment','deadline','meeting'].map(k=>`<span><i class="kd k-${k}"></i>${esc(t('k_'+k))}</span>`).join('')}</div></section>`;
-  const list=ui.calDay?evs.filter(e=>e.date===ui.calDay):evs.filter(e=>dayDiff(e.date)>=-7);
-  h+=`<section class="stack"><h2 class="h2">${esc(ui.calDay?fmtD(ui.calDay,{weekday:'long',day:'numeric',month:'long'}):t('upcoming'))}</h2>`;
-  if(!list.length) h+=`<p class="muted small">${esc(t('noEvents'))}</p>`;
-  else { h+=`<ul class="list card">`; list.forEach(e=>{ h+=`<li><button class="tap ev" data-act="openDeal" data-id="${e.deal.id}"><span class="d"><b>${esc(fmtD(e.date,{day:'numeric'}))}</b><span>${esc(fmtD(e.date,{month:'short'}))}</span></span><span class="stack-s" style="gap:3px"><b><i class="kd k-${e.kind}"></i>${esc(tx(e.label))}</b><span class="tiny">${esc(tx(e.deal.title))} · ${esc(e.deal.parties[1].org)}</span><span class="row wrap" style="gap:6px">${e.status==='done'?`<span class="chip c-ok">${esc(t('done'))}</span>`:statusChip(e.status==='agreed'?'agreed':'proposed')}<span class="tiny">${esc(relDay(e.date))}</span></span></span></button></li>`; }); h+=`</ul>`; }
+  for(let i=0;i<cells;i++){ const dt=new Date(Date.UTC(y,m-1,1-sw+i)), ymd=dt.toISOString().slice(0,10), inM=dt.getUTCMonth()===m-1, es=evs.filter(e=>e.date===ymd), hol=es.some(e=>e.kind==='holiday'), ad=adFor(ymd);
+    cs+=`<button class="${inM?'':'other'} ${ymd===today?'today':''} ${hol?'hol':''} ${es.length?'has':''}" aria-pressed="${ui.calDay===ymd}" data-act="calDay" data-v="${ymd}" aria-label="${esc(fmtD(ymd,{day:'numeric',month:'long'}))}${es.length?', '+es.length:''}"><span>${new Intl.NumberFormat(bcp()).format(dt.getUTCDate())}</span><span class="dots">${es.slice(0,4).map(e=>`<i class="k-${e.kind}"></i>`).join('')}</span>${ad?`<span class="adpin">${adLogo(ad,18)}</span>`:''}</button>`; }
+  const inMonth=evs.filter(e=>e.date.slice(0,7)===ui.calMonth);
+  const cnt=k=>inMonth.filter(e=>e.kind===k).length;
+  let h=`<div class="cal-wrap"><section class="card pad stack cal-card"><div class="row between"><button class="ibtn" data-act="calNav" data-v="-1" aria-label="${esc(t('prevMonth'))}">${ic('back')}</button><div class="stack-s" style="gap:0;align-items:center"><h1 class="h2">${esc(mn)}</h1><span class="tiny">${esc(t('nThisMonth',{n:inMonth.length}))}</span></div><button class="ibtn" data-act="calNav" data-v="1" aria-label="${esc(t('nextMonth'))}">${ic('fwd')}</button></div><div class="cal">${wd.map(w=>`<span class="wd">${esc(w)}</span>`).join('')}${cs}</div><div class="legend">${['delivery','payment','deadline','meeting','tax','holiday'].map(k=>`<span><i class="kd k-${k}"></i>${esc(t('k_'+k))}${cnt(k)?` <b>${new Intl.NumberFormat(bcp()).format(cnt(k))}</b>`:''}</span>`).join('')}</div>${ui.calMonth!==todayYMD().slice(0,7)?`<button class="btn sec sm" data-act="calToday" style="align-self:center">${esc(t('jumpToday'))}</button>`:''}</section>`;
+  /* side column: selected day, or this month's agenda */
+  const list=ui.calDay?evs.filter(e=>e.date===ui.calDay):inMonth;
+  h+=`<section class="stack cal-side"><div class="sec-h"><h2 class="h2">${esc(ui.calDay?fmtD(ui.calDay,{weekday:'long',day:'numeric',month:'long'}):t('thisMonth'))}</h2>${ui.calDay?`<button class="btn sec sm" data-act="calDay" data-v="${ui.calDay}">${esc(t('showMonth'))}</button>`:''}</div>`;
   const ad=ui.calDay&&adFor(ui.calDay);
-  if(ad) h+=`<button class="card tap ad-row" data-act="adSheet" data-v="${ad.date}"><span class="ad-ico" style="background:${ad.tone};color:${ad.ink}">${ic(ad.icon,20)}</span><span class="stack-s" style="gap:2px;min-width:0"><span class="lbl">${esc(t('sponsored'))} · ${esc(t('sampleAd'))}</span><b class="brandname">${esc(ad.name)}</b><span class="tiny">${esc(t(ad.line))}</span></span></button>`;
-  return h+`</section><p class="tiny">${esc(t('calNote'))}</p>`;
+  if(!list.length) h+=`<div class="card pad stack-s"><p class="muted small">${esc(t('noEvents'))}</p><button class="btn sec sm" data-act="addAny" style="align-self:flex-start">${ic('plus',16)} ${esc(t('add'))}</button></div>`;
+  else { h+=`<ul class="list card">`; list.forEach(e=>{ h+=evRow(e); }); h+=`</ul>`; }
+  if(ad) h+=adCard(ad);
+  else if(!ui.calDay){ const ma=ADS.filter(a=>a.date.slice(0,7)===ui.calMonth); ma.forEach(a=>{ h+=adCard(a); }); }
+  return h+`</section></div><p class="tiny">${esc(t('calNote'))}</p>`;
 }
-const ADS=[{date:'2026-10-30',name:'Dabba Dispatch',icon:'truck',tone:'#FFF1D9',ink:'#9A5B00',line:'ad1Line'},{date:'2026-11-04',name:'Bahi Advance',icon:'coin',tone:'#E3F3EC',ink:'#0F7350',line:'ad2Line'}];
+const adCard=ad=>`<button class="card tap ad-row" data-act="adSheet" data-v="${ad.date}"><span class="ad-logo">${adLogo(ad,44)}</span><span class="stack-s" style="gap:2px;min-width:0"><span class="lbl">${esc(t('sponsored'))} · ${esc(t('sampleAd'))} · ${esc(fmtD(ad.date,{day:'numeric',month:'short'}))}</span><b class="brandname">${esc(ad.name)}</b><span class="tiny">${esc(t(ad.line))}</span></span></button>`;
+/* sample ad logos, drawn so they read at 18px on a calendar day and at 64px in the ad sheet */
+function adLogo(a,size){
+  const s=size||40;
+  if(a.logo==='dabba') return `<svg class="adsvg" width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF9F2E"/><stop offset="1" stop-color="#E8590C"/></linearGradient></defs><rect width="48" height="48" rx="13" fill="url(#dg)"/><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19h7M4 25h9M7 31h6" stroke-width="2.6" opacity=".85"/><path d="M18 16.5 29 12l11 4.5v14L29 35l-11-4.5z" stroke-width="2.8" fill="#fff" fill-opacity=".14"/><path d="M18 16.5 29 21l11-4.5M29 21v14" stroke-width="2.8"/><path d="m23.5 14.3 11 4.5" stroke-width="2.2" opacity=".7"/></g></svg>`;
+  return `<svg class="adsvg" width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1DB37A"/><stop offset="1" stop-color="#0B6B47"/></linearGradient></defs><rect width="48" height="48" rx="13" fill="url(#bg2)"/><g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"><path d="M13 12h16M13 18.5h16"/><path d="M19 12c5.5 0 8 2.6 8 6.5S24.5 25 19 25h-5l11 11"/></g><g fill="none" stroke="#C9FFE6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6"><path d="m30 33 7-7"/><path d="M32 26h5v5"/></g></svg>`;
+}
+const ADS=[{date:'2026-10-30',name:'Dabba Dispatch',logo:'dabba',line:'ad1Line'},{date:'2026-11-04',name:'Bahi Advance',logo:'bahi',line:'ad2Line'}];
 const adFor=ymd=>ADS.find(a=>a.date===ymd);
-function adSheet(ymd){ const a=adFor(ymd); openSheet(sheetHead(a.name,esc(t('sponsored'))+' · '+esc(t('sampleAd')))+`<div class="row" style="gap:12px"><span class="ad-ico big" style="background:${a.tone};color:${a.ink}">${ic(a.icon,28)}</span><p>${esc(t(a.line))}</p></div><button class="btn" data-act="adVisit">${esc(t('adVisit'))}</button><p class="tiny">${esc(t('adDisclaim'))}</p>`); }
+function adSheet(ymd){ const a=adFor(ymd); openSheet(sheetHead(a.name,esc(t('sponsored'))+' · '+esc(t('sampleAd')))+`<div class="row" style="gap:14px"><span class="ad-logo big">${adLogo(a,64)}</span><p>${esc(t(a.line))}</p></div><button class="btn" data-act="adVisit">${esc(t('adVisit'))}</button><p class="tiny">${esc(t('adDisclaim'))}</p>`); }
 
 /* ---------- versions ---------- */
 function renderRevisions(){
@@ -695,9 +934,9 @@ function voicesFor(code){ try{ const bc=langOf(code).bcp.toLowerCase(); return s
 function renderSettings(){
   const s=S.settings, tts='speechSynthesis' in window, vs=tts?voicesFor(s.lang):[];
   const a=acct();
-  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':a.role==='buyer'?'buyer':'seller'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="logout">${esc(t('logOut'))}</button><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div></section>
+  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':a.role==='buyer'?'buyer':'seller'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div><button class="btn danger full" data-act="logoutAsk">${ic('logout',18)} ${esc(t('logOut'))}</button></section>
   <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
-  <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}</section>
+  <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}${layoutSeg()}</section>${a.role==='lawyer'?'':`<section class="card pad row between" style="gap:12px"><span class="stack-s" style="gap:2px"><b>${esc(t('snipTool'))}</b><span class="tiny">${esc(t('snipSub'))}</span></span><button class="btn ${s.snip?'sec':''} sm" data-act="snipToggle">${esc(t(s.snip?'snipRemove':'snipAdd'))}</button></section>`}
   <section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
   <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
   ${STANDALONE&&!isInstalled()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
@@ -1150,22 +1389,20 @@ function renderRoom(){
   h+=`<div class="room-msgs" id="roomMsgs">${d.room.length?d.room.map(m=>`<div class="rm ${m.by==='me'?'mine':''}"><div class="rm-b"><span class="rm-n">${esc(m.name)} · ${esc(fmtDT(m.at))}</span><div class="txt">${esc(m.text)}</div></div>${FRAUD_RE.test(m.text)?`<div class="rm-warn">${ic('excl',14)} ${esc(t('roomFraud'))}</div>`:''}</div>`).join(''):`<p class="small muted" style="text-align:center;padding:24px 8px">${esc(t('roomEmpty'))}</p>`}</div>`;
   h+=`<div class="composer">`;
   if(unc.length) h+=`<div class="chips-row"><span class="lbl">${esc(t('suggest'))}</span><div class="chips">${unc.map(x=>`<button class="sgchip" data-act="chip" data-k="${x.key}">${esc(t('sg_'+x.key))}</button>`).join('')}</div></div>`;
-  h+=`<div class="row" style="gap:8px;align-items:center"><span class="tiny">${esc(t('sendingAs'))}</span><div class="seg sm">${d.parties.filter(p=>!d.guest||p.id==='me').map(p=>`<button aria-pressed="${as===p.id}" data-act="roomAs" data-v="${p.id}">${esc(first(p.name))}</button>`).join('')}</div></div>`;
   h+=`<div class="row" style="gap:8px;align-items:flex-end"><textarea class="inp" id="roomInput" rows="1" placeholder="${esc(t('typeMsg'))}" data-input="roomDraft">${esc(ui.roomDraft||'')}</textarea><button class="btn send" data-act="roomSend" aria-label="${esc(t('send'))}">${ic('send',18)}</button></div><div class="rm-warn" id="roomWarn" ${FRAUD_RE.test(ui.roomDraft||'')?'':'hidden'}>${ic('excl',14)} ${esc(t('roomFraud'))}</div>`;
   h+=`<div class="row wrap" style="gap:8px">${SAMPLE&&S.settings.ai?`<button class="btn sec sm" data-act="roomSmart" ${ui.roomBusy?'disabled':''}>${ui.roomBusy?'<span class="spin"></span>':ic('spark',16)} ${esc(t('smartSuggest'))}</button>`:''}${d.guest||!d.room.length?'':`<button class="btn sec sm" data-act="roomSave">${ic('lock',16)} ${esc(t('saveChat'))}</button>`}</div></div>`;
   return h;
 }
 function roomSend(){
   const d=deal(ui.roomDeal), inp=$('#roomInput'), text=((inp&&inp.value)||'').trim(); if(!d||!text) return;
-  const by=ui.roomAs||'me', p=d.parties.find(x=>x.id===by)||d.parties[0], m={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),by,name:p.name,text,at:nowISO()};
-  if(by!=='me') m.demo=true;
+  const by='me', p=d.parties.find(x=>x.id==='me')||d.parties[0], m={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),by,name:p.name,text,at:nowISO()};
   d.room.push(m); ui.roomDraft=''; if(!d.guest) save();
   const c=roomConn[d.id]; if(c&&c.r&&by==='me'){ c.r.emit('msg',{id:m.id,name:m.name,text:m.text,at:m.at}).catch(()=>{}); roomPresence(d); }
   render(); const ri=$('#roomInput'); if(ri) ri.focus();
 }
 async function roomSmart(){
   const d=deal(ui.roomDeal); if(!SAMPLE||!d) return; ui.roomBusy=true; render();
-  try{ const cov=coverage(d), open=TERM_DEFS.filter(x=>!cov[x.key]).map(x=>en('t_'+x.key)), chat=d.room.slice(-12).map(m=>`${m.name}: ${m.text}`).join('\n'), me=d.parties.find(p=>p.id===(ui.roomAs||'me'))||d.parties[0];
+  try{ const cov=coverage(d), open=TERM_DEFS.filter(x=>!cov[x.key]).map(x=>en('t_'+x.key)), chat=d.room.slice(-12).map(m=>`${m.name}: ${m.text}`).join('\n'), me=d.parties.find(p=>p.id==='me')||d.parties[0];
     const r=await SAMPLE(`You help two Indian small-business owners settle a deal over chat. Points not yet settled: ${open.join(', ')||'none'}.\nRecent chat:\n${chat||'(no messages yet)'}\n\nWrite ONE short, friendly message that ${me.name} can send next to settle the most important open point. Never suggest skipping bills, GST or traceable payments. Write it in ${langOf(S.settings.lang).en}. Output only the message text.`,{modelTier:'quick'});
     ui.roomDraft=String(r.text||'').trim().replace(/^["“]|["”]$/g,''); }catch(e){ toast(t('o_noClaude')); }
   ui.roomBusy=false; render();
@@ -1184,14 +1421,14 @@ function renderAuth(){
   const A=ui.auth||(ui.auth={mode:'signup',step:'form',role:'seller',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''});
   const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('langAndSize'))}">${esc(langOf(S.settings.lang).n)}</button>`;
   const f=(k,l,o)=>`<label class="field">${esc(t(l))}<input class="inp" data-auth="${k}" value="${esc(A[k])}" ${o||''}></label>`;
-  let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}Draft It</div>${lc}</header><section class="band gut"><h1>${esc(t('welcomeTag'))}</h1></section><main class="gut stack" style="padding-bottom:40px">`;
+  let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}Draft It</div>${lc}</header><section class="band gut auth-band"><h1>${esc(t('welcomeTag'))}</h1><ul class="auth-points desk">${[['chat','authP1'],['shield','authP2'],['pen','authP3']].map(([i,k])=>`<li><span>${ic(i,20)}</span>${esc(t(k))}</li>`).join('')}</ul></section><main class="gut stack auth-main" style="padding-bottom:40px">`;
   h+=`<div class="seg">${['signup','login','join'].map(m=>`<button aria-pressed="${A.mode===m}" data-act="authMode" data-v="${m}">${esc(t(m==='signup'?'signUp':m==='login'?'logIn':'joinChat'))}</button>`).join('')}</div><section class="card pad stack">`;
   if(A.mode==='join') h+=`<p class="small muted">${esc(t('joinIntro'))}</p><label class="field">${esc(t('roomCodeLbl'))}<input class="inp mono" data-auth="code" value="${esc(A.code||'')}" autocapitalize="characters" placeholder="D05"></label><label class="field">${esc(t('yourName'))}<input class="inp" data-auth="gname" value="${esc(A.gname||'')}"></label><button class="btn full" data-act="authJoin">${ic('chat',18)} ${esc(t('joinChat'))}</button>`;
   else if(SB&&A.step==='otp') h+=`<p class="small">${esc(t('codeSentTo',{email:A.email}))}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="10" autocomplete="one-time-code" aria-label="${esc(t('enterCode'))}"><p class="tiny">${esc(t('otpEmailHint'))}</p><button class="btn full" data-act="authVerify" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('verifyOtp'))}</button><div class="row between"><button class="link" data-act="authBack">${esc(t('back'))}</button><button class="link" data-act="authOtp">${esc(t('resendCode'))}</button></div>`;
   else if(SB&&A.mode==='login') h+=`${f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')}<button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('sendCode'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
   else if(A.step==='otp') h+=`<p class="small">${esc(t('enterOtp'))} · +91 ${esc(A.mobile)}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="${esc(t('enterOtp'))}"><p class="tiny">${esc(t('otpDemo'))}</p><button class="btn full" data-act="authVerify">${esc(t('verifyOtp'))}</button><button class="link" data-act="authBack">${esc(t('back'))}</button>`;
   else if(A.mode==='login') h+=`${f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"')}<button class="btn full" data-act="authOtp">${esc(t('sendOtp'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
-  else { h+=`<div class="stack-s"><span class="lbl">${esc(t('iAmA'))}</span>${[['seller','seller','roleSellerSub'],['buyer','buyer','roleBuyerSub'],['lawyer','role_lawyer','roleLawyerSub']].map(([k,l,sub])=>`<button class="radio ${A.role===k?'on':''}" data-act="authRole" data-v="${k}"><span class="stack-s" style="gap:1px;text-align:left"><b>${esc(t(l))}</b><span class="tiny">${esc(t(sub))}</span></span></button>`).join('')}</div>`;
+  else { h+=`<div class="stack-s"><span class="lbl">${esc(t('iAmA'))}</span><div class="roles" role="radiogroup" aria-label="${esc(t('iAmA'))}">${[['seller','seller','roleSellerSub','shop'],['buyer','buyer','roleBuyerSub','bag'],['lawyer','role_lawyer','roleLawyerSub','scale']].map(([k,l,sub,icn])=>`<button class="role ${A.role===k?'on':''}" role="radio" aria-checked="${A.role===k}" data-act="authRole" data-v="${k}"><span class="role-ico">${ic(icn,24)}</span><b>${esc(t(l))}</b></button>`).join('')}</div><p class="tiny role-sub">${esc(t(([['seller','roleSellerSub'],['buyer','roleBuyerSub'],['lawyer','roleLawyerSub']].find(x=>x[0]===(A.role||'seller'))||[])[1]||'roleSellerSub'))}</p></div>`;
     h+=f('name','yourName','autocomplete="name"')+(SB?f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')+f('mobile','mobileOpt','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'):f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'));
     if(A.role==='lawyer') h+=f('enrol','enrolNo','placeholder="KAR/1234/2016"')+`<label class="field">${esc(t('barState'))}<select class="sel" data-auth="bar">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat','Kerala'].map(x=>`<option ${A.bar===x?'selected':''}>${x}</option>`).join('')}</select></label>`+f('fee','lawyerFee','inputmode="numeric"');
     else h+=f('business','business');
@@ -1490,11 +1727,16 @@ document.addEventListener('click',async e=>{
     case 'notarySheet': notarySheet(); break;
     case 'confirmNotary': { const dt=$('#notDate').value; if(!dt) break; S.notary=S.notary||[]; S.notary.push({by:S.session,date:dt,at:nowISO()}); save(); closeSheet(); render(); toast(t('notaryBooked',{date:fmtD(dt,{day:'numeric',month:'long'})})); break; }
     case 'adSheet': adSheet(a.dataset.v); break;
+    case 'snipToggle': S.settings.snip=!S.settings.snip; save(); if(S.settings.snip){ SN.open=true; toast(t('snipOnToast')); } else { SN.open=false; stopShare(); if(SN.pip&&!SN.pip.closed) SN.pip.close(); toast(t('snipOffToast')); } ui.keep=true; render(); break;
+    case 'snipOpen': if(SN.pip&&!SN.pip.closed){ SN.pip.focus(); break; } SN.open=true; renderSnip(); break;
+    case 'setLayout': S.settings.layout=a.dataset.v; try{ localStorage.setItem('draftit.lay',a.dataset.v); }catch(err){} save(); applyLayout(); ui.keep=true; render(); break;
+    case 'sysEv': sysSheet(a.dataset.v); break;
+    case 'calToday': ui.calMonth=todayYMD().slice(0,7); ui.calDay=null; render(); break;
     case 'adVisit': toast(t('sampleAd')); break;
     case 'openRoom': openRoom(a.dataset.id); break;
     case 'roomSend': roomSend(); break;
     case 'roomAs': ui.roomAs=a.dataset.v; render(); break;
-    case 'chip': { const dd=deal(ui.roomDeal), cp=dd.parties.find(x=>x.id!==(ui.roomAs||'me')); ui.roomDraft=t('sg_'+a.dataset.k); render(); const ri=$('#roomInput'); if(ri){ ri.focus(); ri.setSelectionRange(ri.value.length,ri.value.length); } break; }
+    case 'chip': { const dd=deal(ui.roomDeal), cp=dd.parties.find(x=>x.id!=='me'); ui.roomDraft=t('sg_'+a.dataset.k); render(); const ri=$('#roomInput'); if(ri){ ri.focus(); ri.setSelectionRange(ri.value.length,ri.value.length); } break; }
     case 'roomInvite': inviteSheet(); break;
     case 'authJoin': { const A=ui.auth, code=roomCode(A.code||''); if(code.length<2) return toast(t('needCode')); ui.guestName=(A.gname||'').trim()||'Guest'; ui.view='room'; joinByCode(code); break; }
     case 'certSheet': certSheet(a.dataset.p); break;
@@ -1556,7 +1798,8 @@ document.addEventListener('click',async e=>{
       else { const ac=Object.values(S.accounts).find(x=>x.mobile===A.mobile); if(!ac) return toast(t('noAccountPhone')); useAccount(ac.id); }
       afterLogin(); break; }
     case 'demoLogin': useAccount(a.dataset.id); ui.demoBack=null; afterLogin(); break;
-    case 'logout': stopSpeak(true); if(SB&&cloud.uid){ await cloudSignOut(); } else { S.session=null; save(); } ui.auth=null; ui.demoBack=null; ui.view='auth'; ui.dealId=null; window.scrollTo(0,0); render(); break;
+    case 'logoutAsk': openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico">${ic('logout',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('logoutQ'))}</h2><p class="small muted">${esc(t(SB&&cloud.uid?'logoutSubCloud':'logoutSubLocal'))}</p></div><div class="stack-s"><button class="btn danger full" data-act="logout">${esc(t('logOutYes'))}</button><button class="btn sec full" data-act="closeSheet">${esc(t('cancel'))}</button></div>`); break;
+    case 'logout': closeSheet(); stopSpeak(true); if(SB&&cloud.uid){ await cloudSignOut(); } else { S.session=null; save(); } ui.auth=null; ui.demoBack=null; ui.view='auth'; ui.dealId=null; window.scrollTo(0,0); render(); break;
     case 'deleteAcct': if(a.dataset.sure&&SB&&cloud.uid){ let error=null; try{ ({error}=await SB.rpc('delete_my_account')); }catch(err){ error=err; } if(error) return toast(t('saveFailed')); cloud.dirty=false; cloud.uid=null; try{ await SB.auth.signOut(); }catch(err){} S=null; await seedState(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); }
       else if(a.dataset.sure){ const id=S.session; S.deals=S.deals.filter(x=>x.owner!==id); delete S.accounts[id]; S.session=null; save(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); } else { a.dataset.sure='1'; a.textContent=t('deleteSure'); } break;
     case 'stampNotNeeded': d.stamp.status='not_needed'; save(); ui.keep=true; render(); break;
@@ -1611,6 +1854,6 @@ if('speechSynthesis' in window){ try{ speechSynthesis.onvoiceschanged=()=>{ if(u
   if(SB){ render(); await seedState(); S.session=null; let user=null;
     try{ const {data}=await SB.auth.getSession(); user=data&&data.session&&data.session.user; }catch(e){}
     if(user){ try{ await loadCloud(user); ui.view='home'; const a=acct(); ui.tut=a&&!a.tutDone&&a.role!=='lawyer'?0:null; }catch(e){ cloud.uid=null; S.session=null; ui.view='auth'; toast(t('cloudLoadFail')); } } else ui.view='auth';
-    render(); ensureTr(); openHashRoom(); return; }
-  S=load(); render(); if(!S) await seedState(); if(acct()){ ui.view='home'; if(isLawyer()) ui.tut=null; } else ui.view='auth'; render(); ensureTr(); openHashRoom(); })();
+    render(); ensureTr(); openHashRoom(); takeShared(); return; }
+  S=load(); render(); if(!S) await seedState(); if(acct()){ ui.view='home'; if(isLawyer()) ui.tut=null; } else ui.view='auth'; render(); ensureTr(); openHashRoom(); takeShared(); })();
 })();

@@ -18,7 +18,10 @@ Built for Srujana Tech Fest 2026, Legal Services theme, problem LS-06 “From Ha
 - **Formal agreement and quotation.** A court-style English agreement with schedules, logos, seals and witness blocks, plus a GST quotation with the amount in words. Both download as files.
 - **Compare agreements.** Upload the other side’s purchase order or contract and see, point by point, which is better for you and what is risky.
 - **Tamper check.** Re-checks every fingerprint and shows what a single changed word looks like.
-- **Lawyer check, scam report, dispute routes, live deal chat, calendar, read aloud** in all six languages.
+- **Snip tool.** Add the Snip from Home and a button stays on every screen. On a laptop it grabs any window (WhatsApp Web, email, a PDF), you drag a box around the messages, and it uploads straight into the deal with an "Uploaded" tick. In Chrome or Edge it can float on top of other apps. On a phone, pick or paste a screenshot, or share one to the installed app.
+- **Calendar that fills itself.** Deal deliveries, payments and deadlines, plus GST return dates (GSTR-1 on the 11th, GSTR-3B on the 20th), quarterly TDS returns, advance tax instalments and national holidays.
+- **Laptop layout.** On wider screens Draft It switches to a side menu, a two-column deal grid, a month-plus-agenda calendar and centred dialogs. Settings → Screen layout switches back to the phone size if you prefer.
+- **Lawyer check, scam report, dispute routes, live deal chat, read aloud** in all six languages.
 
 ## Use it on your phone or computer
 
@@ -26,7 +29,9 @@ The live link works in any modern browser. To install it like an app:
 
 - **Android (Chrome):** open the link, tap the menu (⋮), then **Install app** or **Add to Home screen**.
 - **iPhone or iPad (Safari):** open the link, tap **Share**, then **Add to Home Screen**.
-- **Windows, Mac or Linux (Chrome or Edge):** open the link and click the install icon in the address bar, or menu → **Install Draft It**.
+- **Windows, Mac or Linux (Chrome or Edge):** open the link and click the install icon in the address bar, or menu → **Install Draft It**. It opens in its own window with the laptop layout.
+
+Once installed on Android, you can share a screenshot or chat export from any app to Draft It and the Snip tool uploads it to a deal.
 
 Draft It runs online. With online storage switched on (below), every account's deals, signatures and settings are saved to the cloud, so you can log in on any phone or computer and pick up where you left off.
 
@@ -90,7 +95,7 @@ cd draft-it
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000. Use a local server rather than opening `index.html` directly, so `config.js` and the Supabase library load.
+Then open http://localhost:8000. Screen snipping needs `https://` or `localhost`. Use a local server rather than opening `index.html` directly, so `config.js` and the Supabase library load.
 
 ## Change the code
 
@@ -101,6 +106,7 @@ The page is built from the files in `src/`:
 | `src/app.js` | The whole app: parsing, analysis, agreements, hashing, signing, rooms, exports |
 | `src/style.css` | Styles (navy and white, one light theme) |
 | `src/i18n*.js` | Interface text in six languages |
+| `sw.js` | Service worker: no offline cache, only install support and the Android share target |
 | `src/seed_tr.js` | Translations of the sample deal content |
 | `src/audio.js` | The sample voice notes |
 | `config.js` | Your Supabase project URL and anon key |
