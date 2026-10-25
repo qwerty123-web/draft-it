@@ -113,6 +113,10 @@ Opening a deal that is not yours, or a page your account type does not have, is 
 | Text | clause edits 5 to 1500 characters, lawyer notes 5 to 2000, chat messages up to 1000, pasted chats up to 2,00,000 |
 | Files | type checked by name and kind (no programs); photos up to 15 MB, voice up to 50 MB, PDFs up to 20 MB, chat exports up to 5 MB, logos up to 2 MB |
 
+**Typing masks.** Each field accepts only the characters it can hold, as you type or paste: mobile numbers, OTPs, fees, HSN and quantities take digits only (a pasted `+91 98765 43210` becomes `9876543210`); names take letters only; GSTIN, Udyam, enrolment and e-Stamp numbers are made uppercase and keep only letters, digits and their separators; rates keep one decimal point and 2 decimals. A short note under the field says why a character was dropped. The checks above still run on save, so a value forced in by editing the page is refused too.
+
+**SQL injection.** The app never builds SQL from text. Every database call goes through the Supabase client as a parameterised request (`.eq()` filters and JSON bodies), which PostgREST turns into prepared statements. Tested against the real schema: titles such as `x'); DROP TABLE deals; --` and `' OR '1'='1` are stored as plain text, a filter on `' OR '1'='1` matches only that literal title, an id containing SQL is refused by a check rule, and other accounts' rows stay untouched.
+
 Everything typed is shown as plain text, never run as code. The database repeats the key checks (deal and evidence ids, SHA-256 fingerprints, evidence types, signature parties, sizes), so bad data is refused even through the API. The `claude` Edge Function accepts only signed-in accounts, at most 30 calls a minute each, and only the two allowed models.
 
 ## Host your own copy
