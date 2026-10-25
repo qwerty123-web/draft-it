@@ -971,8 +971,11 @@ function recordSheet(id){
   if(r.media&&r.media.thumb) h+=`<img class="thumb" src="${esc(r.media.thumb)}" alt="">`;
   if(r.type==='voice') h+=`<div class="row wrap">${sayBtn('recMsgs',{lang:'en',sel:'.txt',label:'playVoice'})}</div>`;
   if(r.media&&r.media.src&&AUDIO[r.media.src]) h+=`<audio controls preload="none" src="${AUDIO[r.media.src]}" style="width:100%"></audio>`;
+  else if(r.media&&r.media.data) h+=`<audio controls preload="none" src="${esc(r.media.data)}" style="width:100%"></audio>`;
+  else if(r.media&&r.media.big) h+=`<div class="note">${esc(t('asrBigNote'))}</div>`;
+  if(r.asr) h+=`<p class="tiny">${esc(t(r.asr.edited?'asrRecEdited':'asrRecAuto'))}</p>`;
   else if(r.media&&r.media.demo) h+=`<div class="note">${esc(t('demoAudio'))}</div>`;
-  h+=`<div class="card pad stack-s seal-mini"><b class="small row" style="gap:6px">${ic('shield',16)} ${esc(t('fileCheckT'))}</b><span class="tiny">${esc(t('fileCheckB'))}</span><span class="mono">SHA-256 ${esc(r.sha256)}</span><div class="row wrap">${r.media&&r.media.src?`<button class="btn sec sm" data-act="dlOriginal" data-id="${r.id}">${ic('down',16)} ${esc(t('dlOriginal'))}</button>`:''}<label class="btn sec sm">${ic('file',16)} ${esc(t('checkCopy'))}<input type="file" hidden data-chkfile="${r.id}"></label></div><div id="chkOut"></div></div>`;
+  h+=`<div class="card pad stack-s seal-mini"><b class="small row" style="gap:6px">${ic('shield',16)} ${esc(t('fileCheckT'))}</b><span class="tiny">${esc(t('fileCheckB'))}</span><span class="mono">SHA-256 ${esc(r.sha256)}</span><div class="row wrap">${r.media&&(r.media.src||r.media.data)?`<button class="btn sec sm" data-act="dlOriginal" data-id="${r.id}">${ic('down',16)} ${esc(t('dlOriginal'))}</button>`:''}<label class="btn sec sm">${ic('file',16)} ${esc(t('checkCopy'))}<input type="file" hidden data-chkfile="${r.id}"></label></div><div id="chkOut"></div></div>`;
   h+=`<div class="row between"><span class="lbl">${esc(t('original'))}</span><button class="btn sec sm" data-act="verifyRecord" data-id="${r.id}">${ic('shield',16)} ${esc(t('verify'))}</button></div><div id="recVerify"></div><div id="recMsgs">${r.messages.map(m=>`<div class="msg"><span class="n">#${m.n}</span><div><div class="row between"><span class="who">${esc(m.sender)}</span><span class="tiny">${esc(m.ts?fmtDT(m.ts):'')}</span></div><div class="txt">${esc(m.text)}</div></div></div>`).join('')}</div>`;
   openSheet(h);
 }
@@ -1451,6 +1454,83 @@ function endTutorial(){ stopSpeak(true); const a=acct(); if(a){ a.tutDone=true; 
 /* ---------- add evidence ---------- */
 const SRC=[['paste','paste'],['whatsapp','chat'],['voice','mic'],['pdf','file'],['photo','cam']];
 const blankInp=type=>({type,text:'',consent:'',party:false,speaker:'cp',srcTime:'',fileName:'',fileHash:'',status:''});
+
+/* ---------- speech to text ----------
+   Voice notes and call recordings are turned into text on the user's own device with OpenAI's Whisper model
+   (run by transformers.js in a background worker). The audio never leaves the device for this step.
+   The model downloads once (from Hugging Face) and is then kept in the browser's cache. */
+const ASR={worker:null,seq:0,jobs:{}};
+const ASR_MODELS={fast:'Xenova/whisper-base',best:'Xenova/whisper-small'};
+const ASR_LIB='https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0/dist/transformers.min.js';
+const asrDefaultModel=()=>{ const mem=navigator.deviceMemory||4, touch=matchMedia('(pointer:coarse)').matches; return (!touch&&mem>=4)?'best':'fast'; };
+function asrWorker(){
+  if(ASR.worker) return ASR.worker;
+  const lib=ASR_LIB, wasm='';
+  const code=`import { pipeline, env } from ${JSON.stringify(lib)};
+env.allowLocalModels=false; ${wasm}
+const pipes={};
+self.onmessage=async e=>{ const {id,audio,model,language}=e.data;
+  try{
+    if(!pipes[model]) pipes[model]=await pipeline('automatic-speech-recognition',model,{progress_callback:x=>{ if(x&&x.status==='progress') self.postMessage({id,type:'progress',file:x.file,loaded:x.loaded,total:x.total}); }});
+    self.postMessage({id,type:'running'});
+    const out=await pipes[model](audio,{language,task:'transcribe',chunk_length_s:30,stride_length_s:5});
+    const text=(Array.isArray(out)?out.map(o=>o.text).join(' '):out.text)||'';
+    self.postMessage({id,type:'done',text:text.replace(/\\s+\\n/g,'\\n').trim()});
+  }catch(err){ self.postMessage({id,type:'error',message:String(err&&err.message||err)}); }
+};`;
+  const w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})),{type:'module'});
+  w.onmessage=e=>{ const m=e.data, j=ASR.jobs[m.id]; if(j) j(m); };
+  w.onerror=e=>{ Object.values(ASR.jobs).forEach(j=>j({type:'error',message:(e&&e.message)||'worker failed'})); ASR.worker=null; };
+  return (ASR.worker=w);
+}
+/* decode any audio (or the sound track of an MP4) to 16 kHz mono, which is what Whisper expects */
+async function decode16k(file){
+  const ab=await file.arrayBuffer(); const AC=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  const ctx=new AC(1,16000,16000);
+  const buf=await new Promise((res,rej)=>{ const p=ctx.decodeAudioData(ab,res,rej); if(p&&p.then) p.then(res,rej); });
+  let data;
+  if(buf.numberOfChannels>1){ const a=buf.getChannelData(0), b=buf.getChannelData(1); data=new Float32Array(a.length); for(let i=0;i<a.length;i++) data[i]=(a[i]+b[i])/2; }
+  else data=new Float32Array(buf.getChannelData(0));
+  if(buf.sampleRate!==16000){ const oc=new AC(1,Math.ceil(buf.duration*16000),16000), src=oc.createBufferSource(), mono=oc.createBuffer(1,data.length,buf.sampleRate); mono.copyToChannel(data,0); src.buffer=mono; src.connect(oc.destination); src.start(); data=(await oc.startRendering()).getChannelData(0); }
+  return {data,dur:buf.duration};
+}
+function asrStatusHtml(x){
+  const a=x.asr; if(!a) return '';
+  if(a.state==='prep') return `<div class="note busy"><span class="spin"></span><span>${esc(t('asrPrep'))}</span></div>`;
+  if(a.state==='load') return `<div class="note busy"><span class="spin"></span><span>${esc(t('asrLoad',{n:a.pct||0}))}</span></div><div class="bar"><i style="width:${a.pct||0}%"></i></div>`;
+  if(a.state==='run') return `<div class="note busy"><span class="spin"></span><span>${esc(t('asrRun',{s:Math.round(a.dur||0)}))}</span></div>`;
+  if(a.state==='done') return `<div class="note ok row" style="gap:8px">${ic('check',18)}<span>${esc(t('asrDone'))}</span></div>`;
+  if(a.state==='error') return `<div class="note bad">${esc(t(a.msg||'asrFail'))}</div>`;
+  return '';
+}
+function asrPaint(x){ if(ui.inp!==x) return; const el=$('#asrStatus'); if(el) el.innerHTML=asrStatusHtml(x); }
+async function transcribe(x){
+  if(!x||!x.file) return; if(x.asr&&['prep','load','run'].includes(x.asr.state)) return;
+  syncInp(); const model=ASR_MODELS[x.asrModel||(x.asrModel=asrDefaultModel())], language=x.asrLang||(x.asrLang=S.settings.lang||'hi');
+  x.asr={state:'prep'}; if(ui.inp===x) addEvidenceSheet();
+  let audio;
+  try{ const r=await decode16k(x.file); audio=r.data; x.asr.dur=r.dur; }
+  catch(e){ x.asr={state:'error',msg:'asrDecodeFail'}; if(ui.inp===x) addEvidenceSheet(); return; }
+  if(window.__draftitASR){ /* test hook */ x.asr.state='run'; asrPaint(x); try{ asrFinish(x,await window.__draftitASR(audio,{model,language}),model,language); }catch(e){ x.asr={state:'error',msg:'asrFail'}; if(ui.inp===x) addEvidenceSheet(); } return; }
+  let w; try{ w=asrWorker(); }catch(e){ x.asr={state:'error',msg:'asrNoSupport'}; if(ui.inp===x) addEvidenceSheet(); return; }
+  const id=++ASR.seq, files={}; x.asr.state='load'; x.asr.pct=0; asrPaint(x);
+  ASR.jobs[id]=m=>{
+    if(m.type==='progress'){ files[m.file]=[m.loaded||0,m.total||0]; const v=Object.values(files), L=v.reduce((s,f)=>s+f[0],0), T=v.reduce((s,f)=>s+f[1],0); x.asr.state='load'; x.asr.pct=T?Math.min(99,Math.round(L/T*100)):0; asrPaint(x); }
+    else if(m.type==='running'){ x.asr.state='run'; asrPaint(x); }
+    else if(m.type==='done'){ delete ASR.jobs[id]; asrFinish(x,m.text,model,language); }
+    else if(m.type==='error'){ delete ASR.jobs[id]; console.warn('speech to text:',m.message); x.asr={state:'error',msg:/fetch|network|load/i.test(m.message||'')?'asrNetFail':'asrFail'}; if(ui.inp===x) addEvidenceSheet(); }
+  };
+  w.postMessage({id,audio,model,language},[audio.buffer]);
+}
+function asrFinish(x,text,model,language){
+  if(ui.inp===x) syncInp();
+  text=(text||'').trim();
+  if(!text){ x.asr={state:'error',msg:'asrEmpty'}; if(ui.inp===x) addEvidenceSheet(); return; }
+  if(!x.text||x.text===x.autoText) x.text=text;
+  x.autoText=text; x.asr={state:'done',model,lang:language};
+  if(ui.inp===x) addEvidenceSheet();
+}
+
 /* file chooser that keeps showing the chosen file after the sheet redraws */
 function filePick(kind,accept,hint){ const x=ui.inp||{}, has=x.fileName&&x.fileKind===kind;
   return `<div class="filepick"><label class="btn sec">${ic('upload',18)} ${esc(t(has?'changeFile':'chooseFile'))}<input type="file" hidden accept="${accept}" data-file="${kind}"></label>${has?`<span class="chip c-ok">${ic('check',14)} ${esc(x.fileName)}</span>`:`<span class="tiny">${esc(t('noFileYet'))}</span>`}</div>${hint?`<p class="tiny">${esc(hint)}</p>`:''}`; }
@@ -1461,7 +1541,7 @@ function addEvidenceSheet(){
   h+=`<div class="sample-bar"><span class="tiny">${esc(t('sampleHint'))}</span><button class="btn sec sm" data-act="fillSample">${ic('spark',16)} ${esc(t('fillSample'))}</button></div>`;
   if(x.type==='paste') h+=`<label class="field">${esc(t('pasteLabel'))}<textarea class="inp" id="inpText" data-input="text" placeholder="18/10/26, 10:02 am - Anjali: …">${esc(x.text)}</textarea></label>`;
   if(x.type==='whatsapp') h+=`${filePick('txt','.txt,text/plain')}<p class="tiny">${esc(t('exportHint'))}</p>`;
-  if(x.type==='voice') h+=`${filePick('audio','audio/*,video/mp4,video/3gpp,video/webm,.mp4,.m4a,.opus,.ogg,.mp3,.aac,.wav,.amr,.3gp,.webm',t('audioTypes'))}${x.audioURL?`<audio controls src="${esc(x.audioURL)}" style="width:100%"></audio>`:''}<div class="stack-s"><span class="lbl">${esc(t('howRecorded'))}</span>${['sent_by_them','call_both_knew','own_note','secret'].map(k=>`<label class="radio ${x.consent===k?'on':''}"><input type="radio" name="consent" value="${k}" ${x.consent===k?'checked':''} data-change="consent"><span>${esc(t('c_'+k))}</span></label>`).join('')}${x.consent==='secret'?`<div class="note bad">${esc(t('secretWarn'))}</div>`:''}<label class="check"><input type="checkbox" ${x.party?'checked':''} data-change="party"><span>${esc(t('partOf'))}</span></label></div>${who('whoSpeaking')}<label class="field">${esc(t('whenSent'))}<input class="inp" type="datetime-local" data-change="srcTime" value="${esc(x.srcTime)}"></label><label class="field">${esc(t('transcript'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label><p class="tiny">${esc(t('transcriptHint'))}</p>`;
+  if(x.type==='voice') h+=`${filePick('audio','audio/*,video/mp4,video/3gpp,video/webm,.mp4,.m4a,.opus,.ogg,.mp3,.aac,.wav,.amr,.3gp,.webm',t('audioTypes'))}${x.audioURL?`<audio controls src="${esc(x.audioURL)}" style="width:100%"></audio>`:''}<div class="asr-box stack-s"><b class="row" style="gap:8px">${ic('mic',18)} ${esc(t('asrTitle'))}</b><div class="asr-opts"><label class="field">${esc(t('asrLangLbl'))}<select class="sel" data-change="asrLang">${LANGS.map(l=>`<option value="${l.c}" ${(x.asrLang||S.settings.lang)===l.c?'selected':''}>${esc(l.n)}</option>`).join('')}</select></label><label class="field">${esc(t('asrQualLbl'))}<select class="sel" data-change="asrModel">${[['fast','asrFast'],['best','asrBest']].map(([k,l])=>`<option value="${k}" ${(x.asrModel||asrDefaultModel())===k?'selected':''}>${esc(t(l))}</option>`).join('')}</select></label></div>${x.file?`<button class="btn sec sm" data-act="asrRun" ${x.asr&&['prep','load','run'].includes(x.asr.state)?'disabled':''} style="align-self:flex-start">${ic('spark',16)} ${esc(t(x.asr&&x.asr.state==='done'?'asrAgain':'asrStart'))}</button>`:`<span class="tiny">${esc(t('asrPick'))}</span>`}<div id="asrStatus">${asrStatusHtml(x)}</div><p class="tiny">${esc(t('asrPrivacy'))}</p></div><div class="stack-s"><span class="lbl">${esc(t('howRecorded'))}</span>${['sent_by_them','call_both_knew','own_note','secret'].map(k=>`<label class="radio ${x.consent===k?'on':''}"><input type="radio" name="consent" value="${k}" ${x.consent===k?'checked':''} data-change="consent"><span>${esc(t('c_'+k))}</span></label>`).join('')}${x.consent==='secret'?`<div class="note bad">${esc(t('secretWarn'))}</div>`:''}<label class="check"><input type="checkbox" ${x.party?'checked':''} data-change="party"><span>${esc(t('partOf'))}</span></label></div>${who('whoSpeaking')}<label class="field">${esc(t('whenSent'))}<input class="inp" type="datetime-local" data-change="srcTime" value="${esc(x.srcTime)}"></label><label class="field">${esc(t('transcript'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label><p class="tiny">${esc(t('transcriptHint'))}</p>`;
   if(x.type==='pdf') h+=`${filePick('pdf','application/pdf,.pdf')}${x.fileHash?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
   if(x.type==='photo') h+=`${filePick('image','image/*')}${x.thumb?`<img class="thumb" src="${esc(x.thumb)}" alt="">`:''}${x.thumb&&SAMPLE?`<button class="btn sec sm" data-act="ocr">${esc(t('readPhoto'))}</button>`:''}${x.thumb||x.text?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
   if(x.status) h+=`<div class="note busy">${x.busy?'<span class="spin"></span>':''}<span>${esc(x.status)}</span></div>`;
@@ -1476,7 +1556,7 @@ async function onFile(kind,file){
   const x=ui.inp; if(!file) return; x.fileName=file.name; x.fileKind=kind; x.file=file;
   const buf=await readAs(file,'buf'); x.fileHash=await sha256Bytes(new Uint8Array(buf));
   if(kind==='txt'){ x.text=new TextDecoder().decode(buf); x.status=t('msgsFound',{n:parseChat(x.text).length}); }
-  if(kind==='audio'){ x.audioURL=URL.createObjectURL(file); x.status=''; }
+  if(kind==='audio'){ x.audioURL=URL.createObjectURL(file); x.status=''; x.asr=null; setTimeout(()=>transcribe(x),0); }
   if(kind==='image'){ x.thumb=await shrink(await readAs(file,'url'),1000); x.status=''; }
   if(kind==='pdf'){ x.busy=true; x.status=t('readingPdf'); addEvidenceSheet();
     try{ if(!window.pdfjsLib){ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
@@ -1497,7 +1577,9 @@ async function saveRecord(){
   const id='CR-'+(++S.counter), up=nowISO(), srcTs=x.srcTime?x.srcTime+':00'+TZ:null; let messages, method='verbatim';
   if(x.type==='paste'||x.type==='whatsapp'){ messages=parseChat(text); if(!messages.length) return toast(t('e_nomsg')); }
   else { const sender=x.speaker==='both'?t('bothCall'):partyName(d,x.speaker); messages=text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:srcTs,sender,text:p.trim()})).filter(m=>m.text); method=x.type==='voice'?'transcript':x.method||'ocr'; }
-  const rec=await mkRecord({id,dealId:d.id,type:x.type,name:x.type==='paste'?'Pasted chat':(x.fileName||en('src_'+x.type)),uploadedAt:up,rawText:text,messages,method,fileHash:x.fileHash||null,media:x.thumb?{kind:'image',thumb:x.thumb}:x.type==='voice'?(x.audioSrc?{kind:'audio',src:x.audioSrc}:{kind:'audio',demo:!!x.audioDemo}):null,consent:x.type==='voice'?{basis:x.consent,party:true,at:up}:null});
+  const voiceMedia=x.type!=='voice'?null:x.audioSrc?{kind:'audio',src:x.audioSrc}:x.file&&x.file.size<=1500000?{kind:'audio',data:await readAs(x.file,'url'),mime:x.file.type||'audio/mpeg'}:x.file?{kind:'audio',big:true}:{kind:'audio',demo:!!x.audioDemo};
+  const asrInfo=x.type==='voice'&&x.asr&&x.asr.state==='done'?{model:x.asr.model,lang:x.asr.lang,edited:text!==(x.autoText||'').trim()}:null;
+  const rec=await mkRecord({id,dealId:d.id,type:x.type,name:x.type==='paste'?'Pasted chat':(x.fileName||en('src_'+x.type)),uploadedAt:up,rawText:text,messages,method,fileHash:x.fileHash||null,media:x.thumb?{kind:'image',thumb:x.thumb}:voiceMedia,asr:asrInfo,consent:x.type==='voice'?{basis:x.consent,party:true,at:up}:null});
   d.records.push(rec); save(); closeSheet(); ui.tab='terms'; render(); toast(t('o_saved',{x:id})); analyseDeal(d);
 }
 
@@ -1677,6 +1759,7 @@ document.addEventListener('click',async e=>{
       const nd=newDealObj(id,title,nowISO(),[{id:'me',name:S.settings.userName,org:S.settings.business,role},{id:'cp',name,org:org||name,role:role==='Seller'?'Buyer':'Seller'}]); nd.terms=fillMissing({});
       S.deals.unshift(nd); save(); ui.dealId=id; ui.view='deal'; ui.tab='evidence'; render(); ui.inp=null; addEvidenceSheet(); break; }
     case 'addEvidence': ui.inp=null; addEvidenceSheet(); break;
+    case 'asrRun': if(ui.inp){ ui.inp.asr=null; transcribe(ui.inp); } break;
     case 'srcType': ui.inp=blankInp(a.dataset.v); addEvidenceSheet(); break;
     case 'ocr': { syncInp(); const x=ui.inp; if(!x.file) break; x.busy=true; x.status=t('readingPhoto'); addEvidenceSheet(); try{ x.text=await ocrBlobs([x.file]); x.method='ocr'; x.status=''; }catch(err){ x.status=t('noPdfText'); } x.busy=false; addEvidenceSheet(); break; }
     case 'saveRecord': await saveRecord(); break;
@@ -1768,7 +1851,7 @@ document.addEventListener('click',async e=>{
     case 'installApp': if(INSTALL){ INSTALL.prompt(); try{ await INSTALL.userChoice; }catch(err){} INSTALL=null; ui.keep=true; render(); } break;
     case 'rmLogo': { syncParties(d); const [pid,k]=a.dataset.v.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=''; save(); partySheet(); break; }
     case 'sampleLogo': { syncParties(d); const [pid,k]=a.dataset.v.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=sampleImage(p,k); save(); partySheet(); break; }
-    case 'dlOriginal': { const r=d.records.find(x=>x.id===a.dataset.id); if(r&&r.media&&r.media.src){ if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:new Blob([audioBytes(r.media.src)],{type:'audio/mpeg'})}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else { const aEl=document.createElement('a'); aEl.href=AUDIO[r.media.src]; aEl.download=r.name; document.body.appendChild(aEl); aEl.click(); aEl.remove(); } } break; }
+    case 'dlOriginal': { const r=d.records.find(x=>x.id===a.dataset.id); if(r&&r.media&&r.media.data){ const blob=await (await fetch(r.media.data)).blob(); if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:blob}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else downloadBlob(r.name,blob); break; } if(r&&r.media&&r.media.src){ if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:new Blob([audioBytes(r.media.src)],{type:'audio/mpeg'})}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else { const aEl=document.createElement('a'); aEl.href=AUDIO[r.media.src]; aEl.download=r.name; document.body.appendChild(aEl); aEl.click(); aEl.remove(); } } break; }
     case 'roomSmart': roomSmart(); break;
     case 'roomSave': await roomSave(); break;
     case 'tutNext': stopSpeak(true); if(ui.tut>=TUT.length-1) endTutorial(); else { ui.tut++; render(); } break;
@@ -1839,6 +1922,7 @@ document.addEventListener('change',async e=>{
   if(k==='setBiz'){ const ac=acct(); if(ac&&el.value.trim()) ac.business=el.value.trim(); }
   if(k==='stampState'&&d) d.stamp.state=el.value;
   if(k==='stampCert'&&d){ d.stamp.cert=el.value.trim(); d.stamp.status=d.stamp.cert?'paid':'not_paid'; save(); ui.keep=true; render(); return; }
+  if(ui.inp&&(k==='asrLang'||k==='asrModel')){ syncInp(); const x=ui.inp; x[k]=el.value; if(x.asr&&['prep','load','run'].includes(x.asr.state)){ addEvidenceSheet(); return; } x.asr=null; if(x.file) transcribe(x); else addEvidenceSheet(); return; }
   if(ui.inp&&['consent','speaker','srcTime','party'].includes(k)){ syncInp(); if(k==='party') ui.inp.party=el.checked; else ui.inp[k]=el.value; addEvidenceSheet(); return; }
   save();
 });

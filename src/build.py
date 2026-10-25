@@ -41,7 +41,7 @@ page=f'''<!doctype html>
 /* DraftIt runs online only. The service worker below caches nothing: it exists so the app can be
    installed on laptops and phones, and so files shared to DraftIt (Android share sheet) reach the snip tool. */
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{{}});
-if(window.caches) caches.keys().then(ks=>ks.forEach(k=>{{ if(k!=='draftit-share') caches.delete(k); }})).catch(()=>{{}});
+if(window.caches) caches.keys().then(ks=>ks.forEach(k=>{{ if(!/draftit-share|transformers/.test(k)) caches.delete(k); }})).catch(()=>{{}});
 </script>
 </body>
 </html>
@@ -55,7 +55,7 @@ open(OUT+'sw.js','w').write(r'''/* DraftIt service worker: network only, no offl
    It takes files shared to the installed app and hands them to the snip tool. */
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
-  for(const k of await caches.keys()) if(k!=='draftit-share') await caches.delete(k);
+  for(const k of await caches.keys()) if(!/draftit-share|transformers/.test(k)) await caches.delete(k);
   await self.clients.claim();
 })()));
 self.addEventListener('fetch',e=>{

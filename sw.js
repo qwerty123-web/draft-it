@@ -2,7 +2,7 @@
    It takes files shared to the installed app and hands them to the snip tool. */
 self.addEventListener('install',()=>self.skipWaiting());
 self.addEventListener('activate',e=>e.waitUntil((async()=>{
-  for(const k of await caches.keys()) if(k!=='draftit-share') await caches.delete(k);
+  for(const k of await caches.keys()) if(!/draftit-share|transformers/.test(k)) await caches.delete(k);
   await self.clients.claim();
 })()));
 self.addEventListener('fetch',e=>{

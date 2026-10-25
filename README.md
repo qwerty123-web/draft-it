@@ -10,6 +10,7 @@ Built for Srujana Tech Fest 2026, Legal Services theme, problem LS-06 “From Ha
 
 ## What it does
 
+- **Voice notes to text.** Upload a voice note or call recording (MP3, M4A, OPUS, WAV, MP4) and DraftIt turns the speech into an editable transcript on the device, using Whisper in six languages. The speech library (transformers.js 4.3.0) loads from jsDelivr and the Whisper model downloads once from Hugging Face, then stays cached.
 - **Evidence in, untouched.** Paste a chat or upload a WhatsApp export, a voice note (with recording consent), a PDF or a photo. Originals are kept word for word with uploader, upload time, source time and a SHA-256 fingerprint.
 - **Points to settle.** Reads the chat and shows each deal point as agreed, proposed, unclear or missing, with links back to the exact messages and a ready WhatsApp message to settle each gap.
 - **Indian laws and standards check.** Guesses the business category (printing, food, medicine, digital, electronics, textiles, construction) and checks the deal against the relevant Indian rules: Contract Act, GST invoice rules, the ₹2 lakh cash limit, MSME 45-day payment, FSSAI packaging, Legal Metrology, Copyright and Trade Marks Acts, and more. Flags bill-skipping or untraceable cash.
