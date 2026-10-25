@@ -82,6 +82,31 @@ create index if not exists evidence_deal_idx   on public.evidence   (owner, deal
 create index if not exists versions_deal_idx   on public.versions   (owner, deal_id);
 create index if not exists signatures_ver_idx  on public.signatures (owner, deal_id, rev);
 
+-- Value checks enforced by the database itself, so bad data is refused even if someone
+-- bypasses the app and calls the API directly. "not valid" means old rows are left alone,
+-- while every new or changed row must pass.
+do $$
+declare c record;
+begin
+  for c in select * from (values
+    ('deals','deals_id_ok',        $c$id ~ '^[A-Za-z0-9_-]{1,40}$'$c$),
+    ('deals','deals_title_len',    $c$title is null or char_length(title) <= 200$c$),
+    ('deals','deals_data_size',    $c$octet_length(data::text) <= 5000000$c$),
+    ('profiles','profiles_size',   $c$octet_length(data::text) <= 2000000$c$),
+    ('evidence','evidence_id_ok',  $c$id ~ '^CR-[0-9]{1,9}$'$c$),
+    ('evidence','evidence_type_ok',$c$type in ('paste','whatsapp','voice','pdf','photo','snip','room')$c$),
+    ('evidence','evidence_hash_ok',$c$sha256 ~ '^[0-9a-f]{64}$'$c$),
+    ('evidence','evidence_name_len',$c$name is null or char_length(name) <= 255$c$),
+    ('evidence','evidence_text_len',$c$raw_text is null or char_length(raw_text) <= 1000000$c$),
+    ('versions','versions_rev_ok', $c$rev between 1 and 10000$c$),
+    ('versions','versions_hash_ok',$c$hash ~ '^[0-9a-f]{64}$' and (prev_hash is null or prev_hash ~ '^[0-9a-f]{64}$')$c$),
+    ('signatures','signatures_party_ok',$c$party in ('me','cp') and rev between 1 and 10000$c$)
+  ) as v(tbl, name, expr) loop
+    execute format('alter table public.%I drop constraint if exists %I', c.tbl, c.name);
+    execute format('alter table public.%I add constraint %I check (%s) not valid', c.tbl, c.name, c.expr);
+  end loop;
+end $$;
+
 -- A locked version's hash and contents can never change; only the lawyer review may be added.
 create or replace function public.versions_keep_seal()
 returns trigger language plpgsql as $$

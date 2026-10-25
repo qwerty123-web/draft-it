@@ -11,6 +11,9 @@ const CORS = {
 };
 const MODELS: Record<string, string> = { quick: "claude-haiku-5-5", default: "claude-sonnet-5-5" };
 const MAX_BODY = 8_000_000; // about 6 MB of images after base64
+// Simple per-account limit so one account cannot run up the bill: 30 calls a minute.
+const RATE = new Map<string, number[]>();
+const tooMany = (id: string) => { const now = Date.now(), list = (RATE.get(id) ?? []).filter((t) => now - t < 60_000); list.push(now); RATE.set(id, list); return list.length > 30; };
 
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "content-type": "application/json" } });
@@ -24,6 +27,9 @@ Deno.serve(async (req) => {
   const apikey = req.headers.get("apikey") ?? Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const who = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, { headers: { Authorization: auth, apikey } });
   if (!who.ok) return reply({ error: "sign_in_required" }, 401);
+  const user = await who.json().catch(() => null) as { id?: string } | null;
+  if (!user?.id) return reply({ error: "sign_in_required" }, 401);
+  if (tooMany(user.id)) return reply({ error: "rate_limited" }, 429);
 
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) return reply({ error: "server_key_missing" }, 503);
@@ -32,7 +38,9 @@ Deno.serve(async (req) => {
   if (raw.length > MAX_BODY) return reply({ error: "too_large" }, 413);
   let body: { messages?: unknown; tier?: string };
   try { body = JSON.parse(raw); } catch { return reply({ error: "bad_json" }, 400); }
-  if (!Array.isArray(body.messages) || body.messages.length === 0) return reply({ error: "bad_request" }, 400);
+  const okMsg = (m: unknown) => !!m && typeof m === "object" && ["user", "assistant"].includes((m as { role?: string }).role ?? "");
+  if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > 20 || !body.messages.every(okMsg)) return reply({ error: "bad_request" }, 400);
+  if (body.tier !== undefined && !(body.tier in MODELS)) return reply({ error: "bad_request" }, 400);
 
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",

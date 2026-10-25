@@ -5,7 +5,7 @@ IN_REPO=os.path.basename(B.rstrip('/'))=='src'
 OUT=os.path.normpath(B+'..')+'/' if IN_REPO else '/home/claude/draft-it/'
 FONTS='<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap">\n'
 css=open(B+'style.css').read()
-SRC=['i18n.js','i18n2.js','i18n3.js','i18n4.js','i18n5.js','i18n6.js','i18n7.js','seed_tr.js','audio.js','app.js']
+SRC=['i18n.js','i18n2.js','i18n3.js','i18n4.js','i18n5.js','i18n6.js','i18n7.js','i18n8.js','seed_tr.js','audio.js','app.js']
 js=''.join(open(B+f).read()+'\n' for f in SRC)
 # version stamp: same for the same sources; the app compares it with version.json to pick up updates
 BUILD=hashlib.sha256((open(B+'style.css').read()+js).encode()).hexdigest()[:8]

@@ -91,6 +91,107 @@ function load(){ try{ const r=localStorage.getItem(STORE); if(r){ const v=JSON.p
 const deal=id=>{ const k=id||ui.dealId; return S.deals.find(d=>d.id===k)||(ui.guest&&ui.guest.id===k?ui.guest:null); };
 const acct=()=>S&&S.session?S.accounts[S.session]:null;
 const isLawyer=()=>{ const a=acct(); return !!a&&a.role==='lawyer'; };
+/* ---------- input rules ----------
+   Every field the app accepts goes through one of these. Each returns null when the value is fine,
+   or the key of a message that says what to fix. Names accept letters from any Indian script. */
+const clean=s=>String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​-‍⁠﻿]/g,'').replace(/[ \t]+/g,' ').trim();
+const cleanText=(s,max)=>String(s==null?'':s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​⁠﻿]/g,'').replace(/\r\n?/g,'\n').trim().slice(0,max||1e6);
+const LETTERS=/\p{L}/gu;
+const V={
+  name(s,req=true){ s=clean(s); if(!s) return req?'v_nameReq':null; if(s.length>60) return 'v_nameLong';
+    if(/\p{N}/u.test(s)) return 'v_nameChars'; if(!/^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u.test(s)) return 'v_nameChars';
+    if((s.match(LETTERS)||[]).length<2) return 'v_nameShort'; if(/(.)\1{3,}/u.test(s.replace(/ /g,''))) return 'v_nameChars'; return null; },
+  biz(s,req=false){ s=clean(s); if(!s) return req?'v_bizReq':null; if(s.length>80) return 'v_bizLong';
+    if(!/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} &.,'’()\/-]*$/u.test(s)||(s.match(LETTERS)||[]).length<2) return 'v_bizChars'; return null; },
+  email(s){ s=clean(s).toLowerCase(); if(!s) return 'v_emailReq'; if(s.length>254||!/^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9_%+-])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,24}$/.test(s)||/\.\./.test(s)) return 'v_email'; return null; },
+  mobile(s,req=true){ s=String(s||'').replace(/\D/g,''); if(!s) return req?'v_mobileReq':null; if(!/^[6-9]\d{9}$/.test(s)||/^(\d)\1{9}$/.test(s)) return 'v_mobile'; return null; },
+  otp(s,min=6,max=6){ s=String(s||'').replace(/\s/g,''); return new RegExp(`^\\d{${min},${max}}$`).test(s)?null:'v_otp'; },
+  enrol(s){ s=clean(s).toUpperCase().replace(/\s+/g,''); const m=s.match(/^([A-Z]{1,4})\/(\d{1,6})(?:\/([A-Z]))?\/(\d{4})$/); if(!m) return 'v_enrol'; const y=+m[4]; if(y<1950||y>new Date().getFullYear()) return 'v_enrol'; return null; },
+  fee(s){ s=String(s==null?'':s).trim(); if(!/^\d{1,6}$/.test(s)||+s>100000) return 'v_fee'; return null; },
+  title(s){ s=clean(s); if(s.length<3||s.length>100||(s.match(LETTERS)||[]).length<2) return 'v_title'; return null; },
+  code(s){ s=String(s||'').replace(/[^A-Za-z0-9]/g,'').toUpperCase(); return /^D[0-9A-Z]{2,15}$/.test(s)?null:'v_code'; },
+  gstin(s,req=false){ s=clean(s).toUpperCase().replace(/\s/g,''); if(!s) return req?'v_gstin':null;
+    if(!/^(0[1-9]|[1-2]\d|3[0-8]|97|99)[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(s)) return 'v_gstin';
+    const C='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'; let sum=0; for(let i=0;i<14;i++){ const p=C.indexOf(s[i])*(i%2?2:1); sum+=Math.floor(p/36)+p%36; }
+    return C[(36-sum%36)%36]===s[14]?null:'v_gstin'; },
+  udyam(s){ s=clean(s).toUpperCase().replace(/\s/g,''); if(!s) return null; return /^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/.test(s)?null:'v_udyam'; },
+  address(s){ s=clean(s); if(!s) return null; return s.length>=10&&s.length<=200&&(s.match(LETTERS)||[]).length>=3?null:'v_address'; },
+  place(s){ s=clean(s); if(!s) return null; return s.length<=60&&/^[\p{L}\p{M}][\p{L}\p{M} .,'’-]*$/u.test(s)?null:'v_place'; },
+  quoteNo(s){ s=clean(s); return /^[A-Za-z0-9][A-Za-z0-9\/-]{0,29}$/.test(s)?null:'v_quoteNo'; },
+  days(s){ s=String(s||'').trim(); return /^\d{1,3}$/.test(s)&&+s>=1&&+s<=365?null:'v_days'; },
+  desc(s){ s=clean(s); return s.length>=3&&s.length<=200&&(s.match(LETTERS)||[]).length>=2?null:'v_desc'; },
+  hsn(s){ s=String(s||'').trim(); if(!s) return null; return /^(\d{4}|\d{6}|\d{8})$/.test(s)?null:'v_hsn'; },
+  qty(s){ s=String(s||'').trim(); return /^\d{1,8}$/.test(s)&&+s>=1&&+s<=10000000?null:'v_qty'; },
+  rate(s){ s=String(s||'').trim(); return /^\d{1,8}(\.\d{1,2})?$/.test(s)&&+s>0&&+s<=10000000?null:'v_rate'; },
+  aadhaar(s){ s=String(s||'').replace(/\D/g,''); if(/^\d{16}$/.test(s)) return null; if(!/^[2-9]\d{11}$/.test(s)) return 'v_aadhaar';
+    const d=[[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]],
+      p=[[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+    let c=0; s.split('').reverse().forEach((ch,i)=>{ c=d[c][p[i%8][+ch]]; }); return c===0?null:'v_aadhaar'; },
+  stampCert(s){ s=clean(s).toUpperCase().replace(/\s/g,''); if(!s) return null; return /^IN-[A-Z]{2}[A-Z0-9]{8,20}$/.test(s)?null:'v_cert'; },
+  futureDate(ymd,maxDays=90){ if(!/^\d{4}-\d{2}-\d{2}$/.test(ymd||'')) return 'v_date'; const n=dayDiff(ymd); return n>=0&&n<=maxDays?null:'v_date'; },
+  pastTime(s){ if(!s) return null; const ms=Date.parse(s+':00'+TZ); if(!isFinite(ms)) return 'v_futureTime'; if(ms>Date.now()+5*60e3) return 'v_futureTime'; if(ms<Date.parse('2005-01-01T00:00:00Z')) return 'v_oldTime'; return null; },
+  len(s,min,max,key){ s=clean(s); return s.length>=min&&s.length<=max?null:key; },
+  apiKey(s){ s=clean(s); return /^sk-ant-[A-Za-z0-9_-]{20,}$/.test(s)?null:'v_apiKey'; },
+};
+const FILE_RULES={
+  txt:{mb:5,ext:/\.(txt|text)$/i,mime:/^text\/plain$/},
+  audio:{mb:50,ext:/\.(mp3|m4a|aac|wav|ogg|oga|opus|amr|3gp|3gpp|mp4|webm|weba|flac)$/i,mime:/^(audio\/|video\/(mp4|3gpp|webm)|application\/ogg)/},
+  pdf:{mb:20,ext:/\.pdf$/i,mime:/^application\/pdf$/},
+  image:{mb:15,ext:/\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i,mime:/^image\//},
+  logo:{mb:2,ext:/\.(jpe?g|png|webp|svg)$/i,mime:/^image\//},
+  cmp:{mb:20,ext:/\.(pdf|docx|txt|jpe?g|png|webp)$/i,mime:/^(application\/pdf|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|text\/plain|image\/.+)$/},
+};
+/* a file passes when its name ending or its type is on the list (phones sometimes send no type, or a generic one) */
+function checkFile(kind,f){ const r=FILE_RULES[kind]; if(!r||!f) return null; if(!f.size) return 'v_fileEmpty';
+  const extOk=r.ext.test(f.name||''), typeOk=!!f.type&&r.mime.test(f.type); if(!extOk&&!typeOk) return 'v_fileType'; if(/\.(exe|apk|bat|cmd|com|msi|scr|js|jar|sh|ps1|vbs|dll)$/i.test(f.name||'')) return 'v_fileType';
+  if(f.size>r.mb*1048576) return {k:'v_fileBig',p:{mb:r.mb}}; return null; }
+const msg=e=>typeof e==='string'?t(e):t(e.k,e.p);
+/* show problems right under the fields; the first one gets focus. errs: [[element, key], …] */
+function clearErrs(root){ (root||document).querySelectorAll('.err').forEach(x=>x.remove()); (root||document).querySelectorAll('[aria-invalid="true"]').forEach(x=>{ x.removeAttribute('aria-invalid'); x.removeAttribute('aria-describedby'); }); }
+/* focus:false for fields checked when they lose focus, so a wrong value never traps the cursor */
+function showErrs(errs,opt){ clearErrs(); let first=null; const focus=!(opt&&opt.focus===false);
+  errs.filter(x=>x&&x[1]).forEach(([el,key],i)=>{ if(!el) return; const id='err'+Date.now().toString(36)+i, sp=document.createElement('span'); sp.className='err'; sp.id=id; sp.setAttribute('role','alert'); sp.textContent=msg(key);
+    el.setAttribute('aria-invalid','true'); el.setAttribute('aria-describedby',id); const host=el.closest('label.field')||el.closest('.filepick')||el.parentElement; host.appendChild(sp); if(!first) first=el; });
+  if(first){ if(focus){ try{ first.focus({preventScroll:false}); first.scrollIntoView({block:'center'}); }catch(e){} } return false; } return true; }
+document.addEventListener('input',e=>{ const el=e.target; if(el&&el.getAttribute&&el.getAttribute('aria-invalid')==='true'){ el.removeAttribute('aria-invalid'); const id=el.getAttribute('aria-describedby'); if(id){ const sp=document.getElementById(id); if(sp&&sp.classList.contains('err')) sp.remove(); } el.removeAttribute('aria-describedby'); } });
+
+/* ---------- who may see and do what ---------- */
+function canSeeDeal(d){ if(!d) return false; if(d.guest) return !!(ui.guest&&ui.guest===d); const a=acct(); if(!a) return false;
+  if(a.role==='lawyer') return !!((d.lawyerReq&&d.lawyerReq.lawyerId===a.lawyerId)||(d.versions||[]).some(v=>v.lawyer&&v.lawyer.lawyerId===a.lawyerId));
+  return d.owner===a.id; }
+const canEditDeal=d=>!!d&&!d.guest&&!isLawyer()&&canSeeDeal(d);
+const VIEWS={user:new Set(['home','calendar','revisions','lawyer','settings','data','deal','room']),lawyer:new Set(['home','revisions','earnings','settings','data','deal','room'])};
+const viewAllowed=v=>{ const a=acct(); if(!a) return v==='auth'||v==='data'||(v==='room'&&!!ui.guest); return (VIEWS[a.role==='lawyer'?'lawyer':'user']).has(v); };
+const DEAL_WRITE=new Set(['addEvidence','asrRun','srcType','ocr','saveRecord','analyse','recDelAsk','recDel','editClause','proposeEdit','acceptChange','rejectChange','withdraw','actor','createDraft','freeze','newRev','signSheet','sigClear','doSign','sgMethod','sgBack','sgOtp','doEsign','lawyerSheet','pickLawyer','requestLawyer','setCat','catSheet','reportSheet','rsFreeze','rsSubmit','partySheet','saveParties','quoteSheet','downloadQuote','stampNotNeeded','fillSample','compareSheet','cmpSample','runCompare','rmLogo','sampleLogo','roomSave','roomInvite','openAsLawyer']);
+const DEAL_READ=new Set(['termSheet','recordSheet','verifyRecord','clauseSheet','versionSheet','verify','tamper','certSheet','verifySig','integritySheet','runIntegrity','tamperIntegrity','exportFormal','dlOriginal','traceClause','docView','disputeSheet','openRoom','roomSend','roomSmart','chip','copyAsk','copyText','compareResult','speakDoc','tab']);
+const USER_ONLY=new Set(['newDeal','createDeal','addAny','pickDeal','ndSample','ndRole','snipToggle','snipOpen']);
+const LAWYER_ONLY=new Set(['lawApprove','lawNotes']);
+function actAllowed(act,a){
+  if(['authMode','authRole','authBack','authOtp','authVerify','authJoin','demoLogin','langSheet','setLang','closeSheet','setTextSize','reset','reloadApp','tutNext','tutPrev','tutSkip','tutListen','readEl','stopSpeak','testVoice','installApp'].includes(act)) return true;
+  if(!acct()) return act==='go'&&['auth','data','home'].includes(a.dataset.v)||(!!ui.guest&&DEAL_READ.has(act)&&canSeeDeal(deal(ui.roomDeal)));
+  if(act==='go') return viewAllowed(a.dataset.v);
+  const byId=['openDeal','versionSheet','pickDeal','openRoom'].includes(act);
+  const d=byId?deal(a.dataset.id):ui.view==='room'?deal(ui.roomDeal):ui.dealId?deal():null;
+  if(byId) return act==='pickDeal'?canEditDeal(d):canSeeDeal(d);
+  if(USER_ONLY.has(act)) return !isLawyer();
+  if(LAWYER_ONLY.has(act)) return isLawyer()&&canSeeDeal(d);
+  if(act==='openAsLawyer') return canEditDeal(d)&&!!d.lawyerReq&&!(SB&&cloud.uid);
+  if(DEAL_WRITE.has(act)) return canEditDeal(d);
+  if(DEAL_READ.has(act)) return canSeeDeal(d);
+  return true;
+}
+
+/* ---------- login codes: lockout after repeated wrong codes, wait before resending ---------- */
+const LOCK_KEY=id=>'draftit.lock.'+String(id).toLowerCase();
+function lockLeft(id){ try{ const v=JSON.parse(localStorage.getItem(LOCK_KEY(id))||'null'); if(v&&v.until>Date.now()) return Math.ceil((v.until-Date.now())/60000); }catch(e){} return 0; }
+function noteWrong(id){ try{ const k=LOCK_KEY(id), v=JSON.parse(localStorage.getItem(k)||'null')||{n:0,until:0}; v.n=(v.until&&v.until<Date.now())?1:v.n+1; if(v.n>=5){ v.until=Date.now()+10*60e3; v.n=0; } localStorage.setItem(k,JSON.stringify(v)); return v.until>Date.now(); }catch(e){ return false; } }
+function triesLeft(id){ try{ const v=JSON.parse(localStorage.getItem(LOCK_KEY(id))||'null'); return Math.max(1,5-((v&&v.n)||0)); }catch(e){ return 5; } }
+function clearWrong(id){ try{ localStorage.removeItem(LOCK_KEY(id)); }catch(e){} }
+
+/* ---------- offline notice ---------- */
+function offlineBar(){ return navigator.onLine===false?`<div class="offline-bar" role="status">${ic('excl',16)} ${esc(t('offline'))}</div>`:''; }
+window.addEventListener('online',()=>{ if(S){ ui.keep=true; render(); if(SB&&cloud.uid&&cloud.dirty) cloudSaveNow(); } });
+window.addEventListener('offline',()=>{ if(S){ ui.keep=true; render(); } });
 const myDeals=()=>{ const a=acct(); if(!a) return []; if(a.role==='lawyer') return S.deals.filter(d=>!d.sample&&((d.lawyerReq&&d.lawyerReq.lawyerId===a.lawyerId)||d.versions.some(v=>v.lawyer&&v.lawyer.lawyerId===a.lawyerId))); return S.deals.filter(d=>d.owner===a.id); };
 function useAccount(id){ S.session=id; const a=S.accounts[id]; if(a){ S.settings.userName=a.name; S.settings.business=a.business||''; S.settings.userId=a.id; } save(); }
 const allMsgs=d=>d.records.flatMap(r=>r.messages.map(m=>({ref:r.id+'#'+m.n,rec:r,...m})));
@@ -233,9 +334,9 @@ async function seedState(){
   S.accounts[RAVI]={id:RAVI,name:'Ravi Kumar',mobile:'9876543210',role:'user',business:'Kumar Print & Pack',train:false,tutDone:false,created:at0};
   LAWYERS.forEach(l=>{ S.accounts[l.acct]={id:l.acct,name:l.name,mobile:l.mobile,role:'lawyer',business:'',lawyerId:l.id,enrol:l.enrol,bar:{l1:'Karnataka',l2:'Maharashtra',l3:'Tamil Nadu'}[l.id],fee:l.fee,train:false,tutDone:false,created:at0}; });
   const AM='Anjali Mehta', RK='Ravi Kumar', VS='Vikram Sharma', SG='Sunil Gupta', PN='Priya Nair';
-  const me={id:'me',name:RK,org:'Kumar Print & Pack',role:'Seller',address:'No. 14, 3rd Cross, Chickpet, Bengaluru 560053',gstin:'29ABCDE1234F1Z5',udyam:'UDYAM-KR-03-0012345'};
+  const me={id:'me',name:RK,org:'Kumar Print & Pack',role:'Seller',address:'No. 14, 3rd Cross, Chickpet, Bengaluru 560053',gstin:'29ABCDE1234F1ZW',udyam:'UDYAM-KR-03-0012345'};
   /* Deal 1 */
-  const d1=newDealObj('D-01',L('Diwali sweet boxes','दिवाली मिठाई के डिब्बे'),'2026-10-22T09:14:00'+TZ,[me,{id:'cp',name:AM,org:'Mehta Sweets',role:'Buyer',address:'27, 9th Main, Jayanagar 4th Block, Bengaluru 560011',gstin:'29AAKFM5678L1Z2',udyam:''}],RAVI); d1.value=34000; d1.category={id:'printing',by:'auto'};
+  const d1=newDealObj('D-01',L('Diwali sweet boxes','दिवाली मिठाई के डिब्बे'),'2026-10-22T09:14:00'+TZ,[me,{id:'cp',name:AM,org:'Mehta Sweets',role:'Buyer',address:'27, 9th Main, Jayanagar 4th Block, Bengaluru 560011',gstin:'29AAKFM5678L1ZD',udyam:''}],RAVI); d1.value=34000; d1.category={id:'printing',by:'auto'};
   d1.records.push(await mkRecord({id:'CR-1001',dealId:'D-01',type:'whatsapp',name:'WhatsApp Chat with Anjali Mehta.txt',uploadedAt:'2026-10-22T09:14:00'+TZ,rawText:WA1,messages:parseChat(WA1)}));
   d1.records.push(await mkRecord({id:'CR-1002',dealId:'D-01',type:'voice',name:'PTT-20261019-WA0004.mp3',uploadedAt:'2026-10-22T09:16:00'+TZ,rawText:VN1,method:'transcript',fileHash:await sha256Bytes(audioBytes('vn1')),messages:[{n:1,ts:'2026-10-19T09:15:00'+TZ,sender:AM,text:VN1}],consent:{basis:'sent_by_them',party:true,at:'2026-10-22T09:16:00'+TZ},media:{kind:'audio',src:'vn1'}}));
   const A=n=>'CR-1001#'+n, V='CR-1002#1';
@@ -348,7 +449,7 @@ async function seedState(){
   d4.lawyerReq={rev:1,lawyerId:'l1',name:'Adv. Meera Iyer',fee:499,platform:PLATFORM_FEE,at:'2026-10-23T10:00:00'+TZ,by:RK,status:'pending'};
   /* Deal 5: Ravi buys paper board. WhatsApp chat plus a voice note; version 1 is locked and waiting for both signatures */
   const RJ='Rakesh Jain';
-  const d5=newDealObj('D-05',X('Paper board from Shree Paper Mart','श्री पेपर मार्ट से पेपर बोर्ड','श्री पेपर मार्टकडून पेपर बोर्ड','శ్రీ పేపర్ మార్ట్ నుంచి పేపర్ బోర్డు','ஸ்ரீ பேப்பர் மார்ட்டிலிருந்து காகித அட்டை','ಶ್ರೀ ಪೇಪರ್ ಮಾರ್ಟ್‌ನಿಂದ ಪೇಪರ್ ಬೋರ್ಡ್'),'2026-10-24T09:30:00'+TZ,[Object.assign({},me,{role:'Buyer'}),{id:'cp',name:RJ,org:'Shree Paper Mart',role:'Seller',address:'112, Avenue Road, Bengaluru 560002',gstin:'29AAGFS4321K1Z8',udyam:''}],RAVI);
+  const d5=newDealObj('D-05',X('Paper board from Shree Paper Mart','श्री पेपर मार्ट से पेपर बोर्ड','श्री पेपर मार्टकडून पेपर बोर्ड','శ్రీ పేపర్ మార్ట్ నుంచి పేపర్ బోర్డు','ஸ்ரீ பேப்பர் மார்ட்டிலிருந்து காகித அட்டை','ಶ್ರೀ ಪೇಪರ್ ಮಾರ್ಟ್‌ನಿಂದ ಪೇಪರ್ ಬೋರ್ಡ್'),'2026-10-24T09:30:00'+TZ,[Object.assign({},me,{role:'Buyer'}),{id:'cp',name:RJ,org:'Shree Paper Mart',role:'Seller',address:'112, Avenue Road, Bengaluru 560002',gstin:'29AAGFS4321K1ZZ',udyam:''}],RAVI);
   d5.value=12000; d5.category={id:'printing',by:'auto'}; d5.stamp.status='not_needed';
   d5.records.push(await mkRecord({id:'CR-1401',dealId:'D-05',type:'whatsapp',name:'WhatsApp Chat with Rakesh Jain.txt',uploadedAt:'2026-10-24T09:30:00'+TZ,rawText:WA5,messages:parseChat(WA5)}));
   d5.records.push(await mkRecord({id:'CR-1402',dealId:'D-05',type:'voice',name:'PTT-20261023-WA0011.mp3',uploadedAt:'2026-10-24T09:32:00'+TZ,rawText:VN5,method:'transcript',fileHash:await sha256Bytes(audioBytes('vn3')),messages:[{n:1,ts:'2026-10-23T18:05:00'+TZ,sender:RJ,text:VN5}],consent:{basis:'sent_by_them',party:true,at:'2026-10-24T09:32:00'+TZ},media:{kind:'audio',src:'vn3'}}));
@@ -684,12 +785,15 @@ function render(){
   if(!S){ app.innerHTML=`<div class="splash"><div class="brand">${ic('shield',30)}DraftIt</div><div class="spin"></div></div>`; return; }
   document.documentElement.lang=S.settings.lang; applyTextSize(); stopRead();
   if(!acct()&&ui.view!=='auth'&&ui.view!=='data'&&!(ui.view==='room'&&ui.guest)){ ui.view='auth'; }
+  if(acct()){ if(!viewAllowed(ui.view)) ui.view='home';
+    if(ui.view==='deal'&&!canSeeDeal(deal())){ ui.view='home'; ui.dealId=null; setTimeout(()=>toast(t('notFound')),0); }
+    if(ui.view==='room'&&!canSeeDeal(deal(ui.roomDeal))){ ui.view='home'; setTimeout(()=>toast(t('notFound')),0); } }
   const y=window.scrollY;
   if(document.body) document.body.dataset.view=ui.view;
   app.className='app v-'+ui.view+(acct()&&ui.view!=='auth'&&!(ui.view==='room'&&ui.guest)?' signed':'');
-  if(ui.view==='auth'){ app.innerHTML=renderAuth(); renderSnip(); return; }
+  if(ui.view==='auth'){ app.innerHTML=renderAuth().replace('</header>','</header>'+offlineBar()); renderSnip(); return; }
   const focusRoom=document.activeElement&&document.activeElement.id==='roomInput';
-  app.innerHTML=renderTop()+trBar()+(ui.view==='home'&&!isLawyer()?renderBand():'')+(ui.view==='deal'?renderTabs():'')+`<main class="gut ${ui.view==='room'?'room-main':''}" id="main">${renderView()}</main>`+(!acct()||(ui.view==='room'&&ui.guest)?'':renderNav())+(ui.tut!=null?renderTutorial():'');
+  app.innerHTML=renderTop()+offlineBar()+trBar()+(ui.view==='home'&&!isLawyer()?renderBand():'')+(ui.view==='deal'?renderTabs():'')+`<main class="gut ${ui.view==='room'?'room-main':''}" id="main">${renderView()}</main>`+(!acct()||(ui.view==='room'&&ui.guest)?'':renderNav())+(ui.tut!=null?renderTutorial():'');
   renderSnip();
   if(ui.keep) window.scrollTo(0,y); ui.keep=false;
   if(ui.view==='room'){ const box=$('#roomMsgs'); if(box) box.scrollTop=box.scrollHeight; window.scrollTo(0,document.body.scrollHeight); const ri=$('#roomInput'); if(ri&&focusRoom){ ri.focus(); ri.setSelectionRange(ri.value.length,ri.value.length); } }
@@ -820,7 +924,7 @@ function agreementActions(d){
     else h+=`<div class="sig-row"><div class="stack-s grow" style="gap:2px"><b>${esc(p.name)}</b><span class="tiny">${esc(t(p.id==='me'?'notSignedYou':'notSignedThem'))}</span></div><button class="btn ${p.id==='me'?'':'sec'} sm" data-act="signSheet" data-p="${p.id}">${ic('pen',16)} ${esc(p.id==='me'?t('signNow'):t('signForDemo',{name:first(p.name)}))}</button></div>`; });
   return h+`</div><button class="btn sec full" data-act="newRev">${esc(t('startNewRev'))}</button>`;
 }
-function stampCard(d){ const s=d.stamp; return `<details class="card legal"><summary><span>${esc(t('stampDuty'))} <span class="chip ${s.status==='paid'?'c-ok':s.status==='not_needed'?'c-mute':'c-warn'}">${esc(t(s.status==='paid'?'stampPaid':s.status==='not_needed'?'notNeeded':'stampNotPaid'))}</span></span></summary><div class="in"><p>${esc(t('stampText'))}</p><label class="field">${esc(t('state'))}<select class="sel" data-change="stampState">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat'].map(x=>`<option ${s.state===x?'selected':''}>${x}</option>`).join('')}</select></label><label class="field">${esc(t('certNo'))}<input class="inp" id="stampCert" value="${esc(s.cert)}" placeholder="IN-KA…" data-change="stampCert"></label><div class="row wrap"><a class="btn sec sm" href="https://www.shcilestamp.com/" target="_blank" rel="noopener">${esc(t('openShcil'))}</a><button class="link" data-act="stampNotNeeded">${esc(t('notNeeded'))}</button></div></div></details>`; }
+function stampCard(d){ const s=d.stamp; return `<details class="card legal"><summary><span>${esc(t('stampDuty'))} <span class="chip ${s.status==='paid'?'c-ok':s.status==='not_needed'?'c-mute':'c-warn'}">${esc(t(s.status==='paid'?'stampPaid':s.status==='not_needed'?'notNeeded':'stampNotPaid'))}</span></span></summary><div class="in"><p>${esc(t('stampText'))}</p><label class="field">${esc(t('state'))}<select class="sel" data-change="stampState">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat'].map(x=>`<option ${s.state===x?'selected':''}>${x}</option>`).join('')}</select></label><label class="field">${esc(t('certNo'))}<input class="inp" id="stampCert" value="${esc(s.cert)}" placeholder="IN-KA…" data-change="stampCert" maxlength="26" autocapitalize="characters" autocomplete="off"></label><div class="row wrap"><a class="btn sec sm" href="https://www.shcilestamp.com/" target="_blank" rel="noopener">${esc(t('openShcil'))}</a><button class="link" data-act="stampNotNeeded">${esc(t('notNeeded'))}</button></div></div></details>`; }
 function lawyerCard(d){
   const v=latestVersion(d), r=d.lawyerReq;
   if(!v||v.signatures.length<2||d.draft) return `<section class="card pad stack-s"><b>${esc(t('lawyerCheck'))}</b><p class="small muted">${esc(t('lawyerAfter'))}</p></section>`;
@@ -836,7 +940,7 @@ function lawyerReviewCard(d){
   if(!v||!r||r.lawyerId!==a.lawyerId) return '';
   if(r.status!=='pending'||r.rev!==v.rev) return v.lawyer?approvalBox(d,v):'';
   const L=standards(d), f=L.filter(x=>x.status==='fail').length, w=L.filter(x=>x.status==='warn').length;
-  return `<section class="card pad stack review"><span class="lbl">${esc(t('lawyerView'))}</span><b>${esc(t('fromUser',{name:r.by}))} · ${esc(t('versionN',{n:v.rev}))}</b><span class="tiny">${esc(fmtDT(r.at))} · ${esc(t('feeLawyer'))} ${rupee(r.fee)}</span><span class="small ${f?'red':''}">${esc(t('stdSummary',{f,w,p:L.length-f-w}))}</span><span class="mono">SHA-256 ${esc(shortHash(v.hash))}</span><label class="field">${esc(t('notesPh'))}<textarea class="inp" id="lawNotes" style="min-height:80px"></textarea></label><div class="row wrap"><button class="btn" data-act="lawApprove">${ic('stamp',18)} ${esc(t('approveDsc'))}</button><button class="btn sec" data-act="lawNotes">${esc(t('sendNotes'))}</button></div></section>`;
+  return `<section class="card pad stack review"><span class="lbl">${esc(t('lawyerView'))}</span><b>${esc(t('fromUser',{name:r.by}))} · ${esc(t('versionN',{n:v.rev}))}</b><span class="tiny">${esc(fmtDT(r.at))} · ${esc(t('feeLawyer'))} ${rupee(r.fee)}</span><span class="small ${f?'red':''}">${esc(t('stdSummary',{f,w,p:L.length-f-w}))}</span><span class="mono">SHA-256 ${esc(shortHash(v.hash))}</span><label class="field">${esc(t('notesPh'))}<textarea class="inp" id="lawNotes" maxlength="2000" style="min-height:80px"></textarea></label><div class="row wrap"><button class="btn" data-act="lawApprove">${ic('stamp',18)} ${esc(t('approveDsc'))}</button><button class="btn sec" data-act="lawNotes">${esc(t('sendNotes'))}</button></div></section>`;
 }
 function diffWords(a,b){
   const A=String(a).split(/(\s+)/), B=String(b).split(/(\s+)/), n=A.length, m=B.length;
@@ -975,11 +1079,11 @@ function voicesFor(code){ if(!ttsWeb()) return []; try{ const bc=langOf(code).bc
 function renderSettings(){
   const s=S.settings, tts=!!ttsWeb()&&!ttsNative(), vs=tts?voicesFor(s.lang):[];
   const a=acct();
-  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':'role_user'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div><button class="btn danger full" data-act="logoutAsk">${ic('logout',18)} ${esc(t('logOut'))}</button></section>
+  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':'role_user'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName" maxlength="60" autocomplete="name"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz" maxlength="80" autocomplete="organization"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div><button class="btn danger full" data-act="logoutAsk">${ic('logout',18)} ${esc(t('logOut'))}</button></section>
   <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
   <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}${layoutSeg()}</section>${a.role==='lawyer'?'':`<section class="card pad row between" style="gap:12px"><span class="stack-s" style="gap:2px"><b>${esc(t('snipTool'))}</b><span class="tiny">${esc(t('snipSub'))}</span></span><button class="btn ${s.snip?'sec':''} sm" data-act="snipToggle">${esc(t(s.snip?'snipRemove':'snipAdd'))}</button></section>`}
   ${ttsCheckCard()}<section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
-  <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${aiViaServer()?`<div class="note ok small">${esc(t('aiServerOn'))}</div>`:''}${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
+  <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${aiViaServer()?`<div class="note ok small">${esc(t('aiServerOn'))}</div>`:''}${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" maxlength="200" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
   ${getAppCard()}${STANDALONE&&!isInstalled()&&!NATIVE()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
   <details class="card legal"><summary>${esc(t('legalNotes'))}</summary><div class="in"><p>${esc(t('legal1'))}</p><p>${esc(t('legal2'))}</p><p>${esc(t('legal3'))}</p><p>${esc(t('legal4'))}</p><p>${esc(t('legal5'))}</p></div></details>
   ${cloud.uid?'':`<button class="btn warn" data-act="reset">${esc(t('resetDemo'))}</button>`}`;
@@ -1034,16 +1138,16 @@ function clauseSheet(cid){
   if(vw.length) h+=`<div class="stack-s"><span class="lbl">${esc(t('confirmedIn'))}</span>${vw.map(v=>`<div class="small">${esc(t('versionN',{n:v.rev}))}: ${v.signatures.map(s=>esc(first(s.name))+' '+esc(fmtD(s.at))).join(', ')||esc(t('notSigned'))}${v.lawyer?' · '+esc(v.lawyer.name):''}</div>`).join('')}</div>`;
   openSheet(h);
 }
-function editClauseSheet(cid){ const d=deal(), c=d.draft.clauses.find(x=>x.id===cid); openSheet(sheetHead(t('suggestEdit'),esc(t('h_'+cid))+' · '+esc(partyName(d,ui.actor)))+`<label class="field">${esc(t('wording'))}<textarea class="inp" id="edText">${esc(tx(c.text))}</textarea></label><label class="field">${esc(t('openField'))}<textarea class="inp" id="edOpen" style="min-height:70px">${esc(tx(c.open))}</textarea></label><p class="tiny">${esc(t('editNote',{name:first(partyName(d,ui.actor==='me'?'cp':'me'))}))}</p><button class="btn" data-act="proposeEdit" data-id="${cid}">${esc(t('sendChange'))}</button>`); }
+function editClauseSheet(cid){ const d=deal(), c=d.draft.clauses.find(x=>x.id===cid); openSheet(sheetHead(t('suggestEdit'),esc(t('h_'+cid))+' · '+esc(partyName(d,ui.actor)))+`<label class="field">${esc(t('wording'))}<textarea class="inp" id="edText" maxlength="1500">${esc(tx(c.text))}</textarea></label><label class="field">${esc(t('openField'))}<textarea class="inp" id="edOpen" maxlength="500" style="min-height:70px">${esc(tx(c.open))}</textarea></label><p class="tiny">${esc(t('editNote',{name:first(partyName(d,ui.actor==='me'?'cp':'me'))}))}</p><button class="btn" data-act="proposeEdit" data-id="${cid}">${esc(t('sendChange'))}</button>`); }
 function signSheet(pid){
   const d=deal(), v=latestVersion(d), p=d.parties.find(x=>x.id===pid);
   const g=ui.sg&&ui.sg.p===pid&&ui.sg.rev===v.rev?ui.sg:(ui.sg={p:pid,rev:v.rev,m:'aadhaar',step:'id',vid:'',otp:'',ok:false});
-  let h=sheetHead(t('signAs',{name:p.name}),esc(p.org))+`<div class="note small">${esc(t('signingVersion',{n:v.rev}))} <span class="mono">${esc(shortHash(v.hash))}</span></div><div class="seg">${[['aadhaar','aadhaarSig'],['drawn','drawnSig']].map(([k,l])=>`<button aria-pressed="${g.m===k}" data-act="sgMethod" data-v="${k}">${esc(t(l))}</button>`).join('')}</div>`;
+  let h=sheetHead(t('signAs',{name:p.name}),esc(p.org))+`<div class="note small">${esc(t('signingVersion',{n:v.rev}))} <span class="mono">${esc(shortHash(v.hash))}</span></div>${pid!=='me'?`<div class="note small">${esc(t('signInPerson',{name:p.name}))}</div>`:''}<div class="seg">${[['aadhaar','aadhaarSig'],['drawn','drawnSig']].map(([k,l])=>`<button aria-pressed="${g.m===k}" data-act="sgMethod" data-v="${k}">${esc(t(l))}</button>`).join('')}</div>`;
   if(g.m==='aadhaar'){
-    if(g.step==='id') h+=`<label class="field">${esc(t('aadhaarOrVid'))}<input class="inp" data-sg="vid" value="${esc(g.vid)}" inputmode="numeric" maxlength="16" autocomplete="off" placeholder="XXXX XXXX XXXX"></label><p class="tiny">${esc(t('aadhaarPrivacy'))}</p><button class="btn full" data-act="sgOtp">${esc(t('sendOtp'))}</button>`;
-    else h+=`<p class="small">${esc(t('esignOtpSent',{last:g.vid.slice(-4)}))}</p><input class="inp otp" data-sg="otp" value="${esc(g.otp)}" inputmode="numeric" maxlength="6" aria-label="${esc(t('enterOtp'))}"><p class="tiny">${esc(t('otpDemo'))}</p><label class="check"><input type="checkbox" data-sg="ok" ${g.ok?'checked':''}><span class="small">${esc(t('esignConsent',{n:v.rev,hash:shortHash(v.hash)}))}</span></label><button class="btn full" data-act="doEsign">${ic('shield',18)} ${esc(t('esignNow'))}</button><button class="link" data-act="sgBack">${esc(t('back'))}</button>`;
+    if(g.step==='id') h+=`<label class="field">${esc(t('aadhaarOrVid'))}<input class="inp" data-sg="vid" value="${esc(g.vid)}" inputmode="numeric" maxlength="19" autocomplete="off" placeholder="XXXX XXXX XXXX"></label><p class="tiny">${esc(t('aadhaarPrivacy'))}</p><button class="btn full" data-act="sgOtp">${esc(t('sendOtp'))}</button>`;
+    else h+=`<p class="small">${esc(t('esignOtpSent',{last:g.vid.slice(-4)}))}</p><input class="inp otp" data-sg="otp" value="${esc(g.otp)}" inputmode="numeric" maxlength="6" aria-label="${esc(t('enterOtp'))}"><p class="demo-code">${esc(t('otpDemoCode',{code:g.demoCode||''}))}</p><label class="check"><input type="checkbox" data-sg="ok" ${g.ok?'checked':''}><span class="small">${esc(t('esignConsent',{n:v.rev,hash:shortHash(v.hash)}))}</span></label><button class="btn full" data-act="doEsign">${ic('shield',18)} ${esc(t('esignNow'))}</button><button class="link" data-act="sgBack">${esc(t('back'))}</button>`;
     h+=`<p class="tiny">${esc(t('esignDemoNote'))}</p>`;
-  } else h+=`<canvas class="sigpad" id="sigpad"></canvas><div class="row between"><span class="tiny">${esc(t('signHere'))}</span><button class="link" data-act="sigClear">${esc(t('clear'))}</button></div><label class="check"><input type="checkbox" id="sigOk"><span>${esc(t('readConfirm',{n:v.rev}))}</span></label><button class="btn full" data-act="doSign" data-p="${pid}">${ic('pen',18)} ${esc(t('signBtn',{n:v.rev}))}</button>`;
+  } else h+=`<canvas class="sigpad" id="sigpad"></canvas><div class="row between"><span class="tiny">${esc(t('signHere'))}</span><button class="link" data-act="sigClear">${esc(t('clear'))}</button></div>${pid!=='me'?`<label class="field">${esc(t('sigNameLbl'))}<input class="inp" id="sigName" maxlength="60" autocomplete="off" placeholder="${esc(p.name)}"></label>`:''}<label class="check"><input type="checkbox" id="sigOk"><span>${esc(t('readConfirm',{n:v.rev}))}</span></label><button class="btn full" data-act="doSign" data-p="${pid}">${ic('pen',18)} ${esc(t('signBtn',{n:v.rev}))}</button>`;
   openSheet(h); if(g.m==='drawn') initSigPad();
 }
 function certSheet(pid){
@@ -1069,7 +1173,7 @@ function lawyerSheet(){
   openSheet(h);
 }
 function langSheet(){ openSheet(sheetHead(t('langAndSize'))+`<div class="langs">${LANGS.map(l=>`<button aria-pressed="${S.settings.lang===l.c}" data-act="setLang" data-v="${l.c}" data-close="1">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}`); }
-function newDealSheet(){ openSheet(sheetHead(t('newDeal'))+`<label class="field">${esc(t('dealAbout'))}<input class="inp" id="ndTitle"></label><label class="field">${esc(t('otherName'))}<input class="inp" id="ndName"></label><label class="field">${esc(t('theirBiz'))}<input class="inp" id="ndOrg"></label><div class="stack-s"><span class="lbl">${esc(t('sideQ'))}</span><div class="roles two side-pick" id="ndRole" role="radiogroup" aria-label="${esc(t('sideQ'))}">${[['Buyer','buyer','bag','sideBuyerSub'],['Seller','seller','shop','sideSellerSub']].map(([v,l,icn,sub])=>`<button class="role" role="radio" aria-checked="false" data-act="ndRole" data-v="${v}"><span class="role-ico">${ic(icn,26)}</span><b>${esc(t(l))}</b><span class="tiny">${esc(t(sub))}</span></button>`).join('')}</div></div><button class="btn" data-act="createDeal">${esc(t('createAndAdd'))}</button><button class="link" data-act="ndSample">${ic('spark',14)} ${esc(t('fillSample'))}</button>`); }
+function newDealSheet(){ openSheet(sheetHead(t('newDeal'))+`<label class="field">${esc(t('dealAbout'))}<input class="inp" id="ndTitle" maxlength="100" required autocomplete="off"></label><label class="field">${esc(t('otherName'))}<input class="inp" id="ndName" maxlength="60" required autocomplete="off"></label><label class="field">${esc(t('theirBiz'))}<input class="inp" id="ndOrg" maxlength="80" autocomplete="off"></label><div class="stack-s"><span class="lbl">${esc(t('sideQ'))}</span><div class="roles two side-pick" id="ndRole" role="radiogroup" aria-label="${esc(t('sideQ'))}">${[['Buyer','buyer','bag','sideBuyerSub'],['Seller','seller','shop','sideSellerSub']].map(([v,l,icn,sub])=>`<button class="role" role="radio" aria-checked="false" data-act="ndRole" data-v="${v}"><span class="role-ico">${ic(icn,26)}</span><b>${esc(t(l))}</b><span class="tiny">${esc(t(sub))}</span></button>`).join('')}</div></div><button class="btn" data-act="createDeal">${esc(t('createAndAdd'))}</button><button class="link" data-act="ndSample">${ic('spark',14)} ${esc(t('fillSample'))}</button>`); }
 /* sample data so nobody has to type a chat to try the app */
 function ddmmyy(dt){ return `${p2(dt.getUTCDate())}/${p2(dt.getUTCMonth()+1)}/${String(dt.getUTCFullYear()).slice(2)}`; }
 async function fillSample(){
@@ -1247,12 +1351,16 @@ function partySheet(){
   const d=deal(), sealed=!d.draft&&d.versions.length;
   let h=sheetHead(t('partyDetails'),esc(tx(d.title)));
   const img=(p,k,lbl)=>`<div class="logo-row"><span class="logo-slot ${k}">${p[k]?`<img src="${esc(p[k])}" alt="">`:ic(k==='logo'?'cam':'stamp',20)}</span><span class="stack-s grow" style="gap:4px"><b class="small">${esc(t(lbl))}</b><span class="row wrap" style="gap:8px"><label class="btn sec sm">${esc(t('uploadImg'))}<input type="file" accept="image/*" hidden data-logo="${p.id}:${k}"></label>${p[k]?`<button class="link" data-act="rmLogo" data-v="${p.id}:${k}">${esc(t('removeLbl'))}</button>`:`<button class="link" data-act="sampleLogo" data-v="${p.id}:${k}">${esc(t('useSampleImg'))}</button>`}</span></span></div>`;
-  d.parties.forEach(p=>{ const f=(k,l,ph)=>`<label class="field">${esc(t(l))}<input class="inp" id="pd_${p.id}_${k}" value="${esc(p[k]||'')}" placeholder="${ph||''}"></label>`; h+=`<div class="card pad stack-s"><b>${esc(p.org||p.name)}</b><span class="tiny">${esc(p.name)} · ${esc(t(p.role==='Seller'?'seller':'buyer'))}</span>${img(p,'logo','logoLbl')}${img(p,'seal','sealLbl')}${f('address','address')}${f('gstin','gstin','29ABCDE1234F1Z5')}${f('udyam','udyam','UDYAM-KR-00-0000000')}</div>`; });
-  h+=`<p class="tiny">${esc(t('logoNote'))}</p><label class="field">${esc(t('signPlace'))}<input class="inp" id="pd_place" value="${esc(d.place||'')}"></label>`;
+  d.parties.forEach(p=>{ const f=(k,l,ph)=>`<label class="field">${esc(t(l))}<input class="inp" id="pd_${p.id}_${k}" value="${esc(p[k]||'')}" placeholder="${ph||''}" maxlength="${{address:200,gstin:15,udyam:19}[k]}" ${k==='address'?'autocomplete="street-address"':'autocapitalize="characters" autocomplete="off"'}></label>`; h+=`<div class="card pad stack-s"><b>${esc(p.org||p.name)}</b><span class="tiny">${esc(p.name)} · ${esc(t(p.role==='Seller'?'seller':'buyer'))}</span>${img(p,'logo','logoLbl')}${img(p,'seal','sealLbl')}${f('address','address')}${f('gstin','gstin','29ABCDE1234F1ZW')}${f('udyam','udyam','UDYAM-KR-00-0000000')}</div>`; });
+  h+=`<p class="tiny">${esc(t('logoNote'))}</p><label class="field">${esc(t('signPlace'))}<input class="inp" id="pd_place" value="${esc(d.place||'')}" maxlength="60" autocomplete="address-level2"></label>`;
   if(sealed) h+=`<div class="note">${esc(t('detailsNextVer'))}</div>`;
   openSheet(h+`<button class="btn full" data-act="saveParties">${esc(t('saveLbl'))}</button>`);
 }
-function syncParties(d){ d.parties.forEach(p=>['address','gstin','udyam'].forEach(k=>{ const el=$('#pd_'+p.id+'_'+k); if(el) p[k]=el.value.trim(); })); const pl=$('#pd_place'); if(pl&&pl.value.trim()) d.place=pl.value.trim(); }
+function partyErrs(d){ const errs=[], seen={}; d.parties.forEach(p=>{ const q=k=>$('#pd_'+p.id+'_'+k), a=q('address'), g=q('gstin'), u=q('udyam');
+    if(a) errs.push([a,V.address(a.value)]); if(g){ const gv=clean(g.value).toUpperCase().replace(/\s/g,''), ge=V.gstin(gv); errs.push([g,ge]); if(gv&&!ge){ if(seen[gv]) errs.push([g,'v_gstinSame']); seen[gv]=1; } } if(u) errs.push([u,V.udyam(u.value)]); });
+  const pl=$('#pd_place'); if(pl) errs.push([pl,V.place(pl.value)]); return errs; }
+/* copies only values that pass the rules, so a half-typed GSTIN never reaches the agreement */
+function syncParties(d){ d.parties.forEach(p=>['address','gstin','udyam'].forEach(k=>{ const el=$('#pd_'+p.id+'_'+k); if(!el) return; let v=clean(el.value); if(k!=='address') v=v.toUpperCase().replace(/\s/g,''); if(!V[k](v)) p[k]=v; })); const pl=$('#pd_place'); if(pl){ const v=clean(pl.value); if(v&&!V.place(v)) d.place=v; } }
 const shrinkPng=(url,max)=>new Promise(res=>{ const im=new Image(); im.onload=()=>{ const k=Math.min(1,max/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); res(c.toDataURL('image/png')); }; im.onerror=()=>res(null); im.src=url; });
 function sampleImage(p,kind){
   const c=document.createElement('canvas'); c.width=c.height=240; const g=c.getContext('2d'), ini=String(p.org||p.name).split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join('')||'P';
@@ -1334,7 +1442,7 @@ function inWords(n){ n=Math.round(n); if(!n) return 'Zero'; const a=['','One','T
 function quoteSheet(){
   const d=deal(), q=ui.q&&ui.q.deal===d.id?ui.q:(ui.q=Object.assign({deal:d.id},quoteDefaults(d))), c=quoteCalc(q);
   const f=(k,l,type,extra)=>`<label class="field">${esc(t(l))}<input class="inp" ${type?`type="${type}"`:''} data-q="${k}" value="${esc(q[k])}" ${extra||''}></label>`;
-  openSheet(sheetHead(t('quotation'),esc(tx(d.title)))+`<div class="grid2">${f('no','quoteNo')}${f('valid','validDays','number','min="1"')}</div>${f('desc','itemDesc')}<div class="grid2">${f('hsn','hsn')}<label class="field">${esc(t('gstRate'))}<select class="sel" data-q="gst">${[0,5,18,40].map(r=>`<option value="${r}" ${+q.gst===r?'selected':''}>${r}%</option>`).join('')}</select></label></div><p class="tiny">${esc(t('hsnHint'))}${catOf(d)==='printing'?' '+esc(t('gstNoteBox')):''}</p><div class="grid2">${f('qty','qty','number','min="0"')}${f('rate','unitRate','number','min="0" step="0.01"')}</div><label class="check"><input type="checkbox" data-q="inter" ${q.inter?'checked':''}><span>${esc(t('interState'))}</span></label><div class="q-total"><span>${esc(t('totalLbl'))}</span><b id="qTotal">${rupee(c.total)}</b></div><button class="btn full" data-act="downloadQuote">${ic('down',18)} ${esc(t('downloadQuote'))}</button><p class="tiny">${esc(t('quoteNote'))}</p>`);
+  openSheet(sheetHead(t('quotation'),esc(tx(d.title)))+`<div class="grid2">${f('no','quoteNo','','maxlength="30" autocomplete="off"')}${f('valid','validDays','number','min="1" max="365" step="1"')}</div>${f('desc','itemDesc','','maxlength="200"')}<div class="grid2">${f('hsn','hsn','','inputmode="numeric" maxlength="8" pattern="[0-9]*"')}<label class="field">${esc(t('gstRate'))}<select class="sel" data-q="gst">${[0,5,18,40].map(r=>`<option value="${r}" ${+q.gst===r?'selected':''}>${r}%</option>`).join('')}</select></label></div><p class="tiny">${esc(t('hsnHint'))}${catOf(d)==='printing'?' '+esc(t('gstNoteBox')):''}</p><div class="grid2">${f('qty','qty','number','min="1" max="10000000" step="1"')}${f('rate','unitRate','number','min="0.01" max="10000000" step="0.01"')}</div><label class="check"><input type="checkbox" data-q="inter" ${q.inter?'checked':''}><span>${esc(t('interState'))}</span></label><div class="q-total"><span>${esc(t('totalLbl'))}</span><b id="qTotal">${rupee(c.total)}</b></div><button class="btn full" data-act="downloadQuote">${ic('down',18)} ${esc(t('downloadQuote'))}</button><p class="tiny">${esc(t('quoteNote'))}</p>`);
 }
 function quoteFile(d,q){
   const c=quoteCalc(q), E=esc, me=d.parties[0].role==='Seller'?d.parties[0]:d.parties[1], cp=me===d.parties[0]?d.parties[1]:d.parties[0], r2=x=>Number(x).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1346,7 +1454,7 @@ function quoteFile(d,q){
 async function saveFile(name,data){ if(!DOWNLOADS&&STANDALONE){ downloadBlob(name,data); toast(t('o_savedFile')); return; } if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:name,data}); toast(t('o_savedFile')); return; }catch(e){ if(e&&e.code==='declined') return; } } openSheet(sheetHead(t('download'),esc(name))+`<p class="small muted">${esc(t('noDownload'))}</p><textarea class="inp mono" id="expText" readonly style="min-height:240px">${esc(data)}</textarea><button class="btn" data-act="copyExport">${ic('copy',18)} ${esc(t('copy'))}</button>`); }
 
 /* ---------- notary ---------- */
-function notarySheet(){ openSheet(sheetHead(t('notaryT'))+`<p class="small muted">${esc(t('notaryB'))}</p><label class="field">${esc(t('pickDate'))}<input class="inp" type="date" id="notDate" min="${todayYMD()}" value="${todayYMD()}"></label><button class="btn full" data-act="confirmNotary">${esc(t('bookNotary'))}</button>`); }
+function notarySheet(){ openSheet(sheetHead(t('notaryT'))+`<p class="small muted">${esc(t('notaryB'))}</p><label class="field">${esc(t('pickDate'))}<input class="inp" type="date" id="notDate" min="${todayYMD()}" max="${new Date(Date.parse(todayYMD()+'T12:00:00Z')+90*864e5).toISOString().slice(0,10)}" value="${todayYMD()}" required></label><button class="btn full" data-act="confirmNotary">${esc(t('bookNotary'))}</button>`); }
 
 /* ---------- live chat room ---------- */
 const roomConn={};
@@ -1362,8 +1470,8 @@ function profileData(){ const uid=cloud.uid, deals=S.deals.filter(d=>d.owner===u
 function cloudRows(){ const uid=cloud.uid, rows=new Map();
   rows.set('p',{t:'profiles',r:{user_id:uid,data:profileData()}});
   S.deals.filter(d=>d.owner===uid&&!d.guest).forEach(d=>{ const {records,versions,...rest}=d;
-    rows.set('d:'+d.id,{t:'deals',r:{owner:uid,id:d.id,title:typeof d.title==='string'?d.title:'',data:rest}});
-    (records||[]).forEach(r=>{ const {rawText,messages,media,...meta}=r; rows.set('e:'+d.id+':'+r.id,{t:'evidence',r:{owner:uid,id:r.id,deal_id:d.id,type:r.type||'paste',name:r.name||'',sha256:r.sha256,raw_text:rawText||'',messages:messages||[],media:media||null,data:meta,uploaded_at:r.uploadedAt||null}}); });
+    rows.set('d:'+d.id,{t:'deals',r:{owner:uid,id:d.id,title:typeof d.title==='string'?d.title.slice(0,200):'',data:rest}});
+    (records||[]).forEach(r=>{ const {rawText,messages,media,...meta}=r; rows.set('e:'+d.id+':'+r.id,{t:'evidence',r:{owner:uid,id:r.id,deal_id:d.id,type:r.type||'paste',name:String(r.name||'').slice(0,255),sha256:r.sha256,raw_text:rawText||'',messages:messages||[],media:media||null,data:meta,uploaded_at:r.uploadedAt||null}}); });
     (versions||[]).forEach(v=>{ const {payload,signatures,lawyer,...vm}=v; rows.set('v:'+d.id+':'+v.rev,{t:'versions',r:{owner:uid,deal_id:d.id,rev:v.rev,hash:v.hash,prev_hash:v.prevHash||null,frozen_at:v.frozenAt||null,payload,lawyer:lawyer||null,data:vm}});
       (signatures||[]).forEach(s=>rows.set('s:'+d.id+':'+v.rev+':'+s.party,{t:'signatures',r:{owner:uid,deal_id:d.id,rev:v.rev,party:s.party,data:s,signed_at:s.at||null}})); }); });
   return rows; }
@@ -1513,12 +1621,13 @@ function renderRoom(){
   h+=`<div class="room-msgs" id="roomMsgs">${d.room.length?d.room.map(m=>`<div class="rm ${m.by==='me'?'mine':''}"><div class="rm-b"><span class="rm-n">${esc(m.name)} · ${esc(fmtDT(m.at))}</span><div class="txt">${esc(m.text)}</div></div>${FRAUD_RE.test(m.text)?`<div class="rm-warn">${ic('excl',14)} ${esc(t('roomFraud'))}</div>`:''}</div>`).join(''):`<p class="small muted" style="text-align:center;padding:24px 8px">${esc(t('roomEmpty'))}</p>`}</div>`;
   h+=`<div class="composer">`;
   if(unc.length) h+=`<div class="chips-row"><span class="lbl">${esc(t('suggest'))}</span><div class="chips">${unc.map(x=>`<button class="sgchip" data-act="chip" data-k="${x.key}">${esc(t('sg_'+x.key))}</button>`).join('')}</div></div>`;
-  h+=`<div class="row" style="gap:8px;align-items:flex-end"><textarea class="inp" id="roomInput" rows="1" placeholder="${esc(t('typeMsg'))}" data-input="roomDraft">${esc(ui.roomDraft||'')}</textarea><button class="btn send" data-act="roomSend" aria-label="${esc(t('send'))}">${ic('send',18)}</button></div><div class="rm-warn" id="roomWarn" ${FRAUD_RE.test(ui.roomDraft||'')?'':'hidden'}>${ic('excl',14)} ${esc(t('roomFraud'))}</div>`;
+  h+=`<div class="row" style="gap:8px;align-items:flex-end"><textarea class="inp" id="roomInput" rows="1" maxlength="1000" placeholder="${esc(t('typeMsg'))}" data-input="roomDraft">${esc(ui.roomDraft||'')}</textarea><button class="btn send" data-act="roomSend" aria-label="${esc(t('send'))}">${ic('send',18)}</button></div><div class="rm-warn" id="roomWarn" ${FRAUD_RE.test(ui.roomDraft||'')?'':'hidden'}>${ic('excl',14)} ${esc(t('roomFraud'))}</div>`;
   h+=`<div class="row wrap" style="gap:8px">${SAMPLE&&S.settings.ai?`<button class="btn sec sm" data-act="roomSmart" ${ui.roomBusy?'disabled':''}>${ui.roomBusy?'<span class="spin"></span>':ic('spark',16)} ${esc(t('smartSuggest'))}</button>`:''}${d.guest||!d.room.length?'':`<button class="btn sec sm" data-act="roomSave">${ic('lock',16)} ${esc(t('saveChat'))}</button>`}</div></div>`;
   return h;
 }
 function roomSend(){
-  const d=deal(ui.roomDeal), inp=$('#roomInput'), text=((inp&&inp.value)||'').trim(); if(!d||!text) return;
+  const d=deal(ui.roomDeal), inp=$('#roomInput'), text=cleanText(inp&&inp.value,5000); if(!d||!text||!canSeeDeal(d)) return;
+  if(text.length>1000) return toast(t('v_msgLong')); if(Date.now()-(roomSend.last||0)<400) return; roomSend.last=Date.now();
   const by='me', p=d.parties.find(x=>x.id==='me')||d.parties[0], m={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),by,name:p.name,text,at:nowISO()};
   d.room.push(m); ui.roomDraft=''; if(!d.guest) save();
   const c=roomConn[d.id]; if(c&&c.r&&by==='me'){ c.r.emit('msg',{id:m.id,name:m.name,text:m.text,at:m.at}).catch(()=>{}); roomPresence(d); }
@@ -1544,18 +1653,18 @@ function guestRoom(id){ const g=newDealObj(id,t('chatRoom'),nowISO(),[{id:'me',n
 function renderAuth(){
   const A=ui.auth||(ui.auth={mode:'signup',step:'form',role:'user',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''});
   const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('langAndSize'))}">${esc(langOf(S.settings.lang).n)}</button>`;
-  const f=(k,l,o)=>`<label class="field">${esc(t(l))}<input class="inp" data-auth="${k}" value="${esc(A[k])}" ${o||''}></label>`;
+  const f=(k,l,o)=>`<label class="field">${esc(t(l))}<input class="inp" name="${k}" data-auth="${k}" value="${esc(A[k]==null?'':A[k])}" ${o||''}></label>`;
   let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}DraftIt</div>${lc}</header><section class="band gut auth-band"><h1>${esc(t('welcomeTag'))}</h1><ul class="auth-points desk">${[['chat','authP1'],['shield','authP2'],['pen','authP3']].map(([i,k])=>`<li><span>${ic(i,20)}</span>${esc(t(k))}</li>`).join('')}</ul></section><main class="gut stack auth-main" style="padding-bottom:40px">`;
   h+=`<div class="seg">${['signup','login','join'].map(m=>`<button aria-pressed="${A.mode===m}" data-act="authMode" data-v="${m}">${esc(t(m==='signup'?'signUp':m==='login'?'logIn':'joinChat'))}</button>`).join('')}</div><section class="card pad stack">`;
-  if(A.mode==='join') h+=`<p class="small muted">${esc(t('joinIntro'))}</p><label class="field">${esc(t('roomCodeLbl'))}<input class="inp mono" data-auth="code" value="${esc(A.code||'')}" autocapitalize="characters" placeholder="D05"></label><label class="field">${esc(t('yourName'))}<input class="inp" data-auth="gname" value="${esc(A.gname||'')}"></label><button class="btn full" data-act="authJoin">${ic('chat',18)} ${esc(t('joinChat'))}</button>`;
+  if(A.mode==='join') h+=`<p class="small muted">${esc(t('joinIntro'))}</p><label class="field">${esc(t('roomCodeLbl'))}<input class="inp mono" data-auth="code" value="${esc(A.code||'')}" autocapitalize="characters" maxlength="20" autocomplete="off" required placeholder="D05"></label><label class="field">${esc(t('yourName'))}<input class="inp" data-auth="gname" value="${esc(A.gname||'')}" maxlength="60" autocomplete="name"></label><button class="btn full" data-act="authJoin">${ic('chat',18)} ${esc(t('joinChat'))}</button>`;
   else if(SB&&A.step==='otp') h+=`<p class="small">${esc(t('codeSentTo',{email:A.email}))}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="10" autocomplete="one-time-code" aria-label="${esc(t('enterCode'))}"><p class="tiny">${esc(t('otpEmailHint'))}</p><button class="btn full" data-act="authVerify" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('verifyOtp'))}</button><div class="row between"><button class="link" data-act="authBack">${esc(t('back'))}</button><button class="link" data-act="authOtp">${esc(t('resendCode'))}</button></div>`;
-  else if(SB&&A.mode==='login') h+=`${f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')}<button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('sendCode'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
-  else if(A.step==='otp') h+=`<p class="small">${esc(t('enterOtp'))} · +91 ${esc(A.mobile)}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="${esc(t('enterOtp'))}"><p class="tiny">${esc(t('otpDemo'))}</p><button class="btn full" data-act="authVerify">${esc(t('verifyOtp'))}</button><button class="link" data-act="authBack">${esc(t('back'))}</button>`;
-  else if(A.mode==='login') h+=`${f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"')}<button class="btn full" data-act="authOtp">${esc(t('sendOtp'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
+  else if(SB&&A.mode==='login') h+=`${f('email','emailLbl','type="email" inputmode="email" autocomplete="email" maxlength="254" required placeholder="you@example.com"')}<button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('sendCode'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
+  else if(A.step==='otp') h+=`<p class="small">${esc(t('enterOtp'))} · +91 ${esc(A.mobile)}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="${esc(t('enterOtp'))}"><p class="demo-code">${esc(t('otpDemoCode',{code:A.demoCode||''}))}</p><button class="btn full" data-act="authVerify">${esc(t('verifyOtp'))}</button><button class="link" data-act="authBack">${esc(t('back'))}</button>`;
+  else if(A.mode==='login') h+=`${f('mobile','mobile','type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel-national" required placeholder="98xxxxxxxx"')}<button class="btn full" data-act="authOtp">${esc(t('sendOtp'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
   else { h+=`<div class="stack-s"><span class="lbl">${esc(t('iAmA'))}</span><div class="roles two" role="radiogroup" aria-label="${esc(t('iAmA'))}">${[['user','role_user','user'],['lawyer','role_lawyer','scale']].map(([k,l,icn])=>`<button class="role ${A.role===k?'on':''}" role="radio" aria-checked="${A.role===k}" data-act="authRole" data-v="${k}"><span class="role-ico">${ic(icn,24)}</span><b>${esc(t(l))}</b></button>`).join('')}</div><p class="tiny role-sub">${esc(t(A.role==='lawyer'?'roleLawyerSub':'roleUserSub'))}</p></div>`;
-    h+=f('name','yourName','autocomplete="name"')+(SB?f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')+f('mobile','mobileOpt','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'):f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'));
-    if(A.role==='lawyer') h+=f('enrol','enrolNo','placeholder="KAR/1234/2016"')+`<label class="field">${esc(t('barState'))}<select class="sel" data-auth="bar">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat','Kerala'].map(x=>`<option ${A.bar===x?'selected':''}>${x}</option>`).join('')}</select></label>`+f('fee','lawyerFee','inputmode="numeric"');
-    else h+=f('business','business');
+    h+=f('name','yourName','autocomplete="name" maxlength="60" required')+(SB?f('email','emailLbl','type="email" inputmode="email" autocomplete="email" maxlength="254" required placeholder="you@example.com"')+f('mobile','mobileOpt','type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel-national" placeholder="98xxxxxxxx"'):f('mobile','mobile','type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel-national" required placeholder="98xxxxxxxx"'));
+    if(A.role==='lawyer') h+=f('enrol','enrolNo','placeholder="KAR/1234/2016" maxlength="24" autocapitalize="characters" autocomplete="off" required')+`<label class="field">${esc(t('barState'))}<select class="sel" data-auth="bar">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat','Kerala'].map(x=>`<option ${A.bar===x?'selected':''}>${x}</option>`).join('')}</select></label>`+f('fee','lawyerFee','inputmode="numeric" maxlength="6" pattern="[0-9]*" required');
+    else h+=f('business','business','maxlength="80" autocomplete="organization"');
     h+=`<label class="check"><input type="checkbox" data-auth="terms" ${A.terms?'checked':''}><span>${esc(t('agreeTerms'))} <button class="link" data-act="go" data-v="data">${esc(t('readPrivacy'))}</button></span></label><label class="check"><input type="checkbox" data-auth="train" ${A.train?'checked':''}><span class="small">${esc(t('trainConsent'))}</span></label><button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t(SB?'sendCode':'sendOtp'))}</button><p class="tiny">${esc(t('haveAccount'))} <button class="link" data-act="authMode" data-v="login">${esc(t('logIn'))}</button></p>`; }
   h+=`</section><section class="stack-s"><span class="lbl">${esc(t(SB?'demoLocal':'demoAccounts'))}</span><div class="stack-s"><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_ravi_4821"><span class="avatar">RK</span><span class="small"><b>${esc(t('demoSeller'))}</b></span></button><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_meera_1016"><span class="avatar">MI</span><span class="small"><b>${esc(t('demoLawyer'))}</b></span></button></div></section>${getAppCard()}</main>`;
   return h;
@@ -1718,9 +1827,9 @@ function addEvidenceSheet(){
   const who=k=>`<label class="field">${esc(t(k))}<select class="sel" data-change="speaker">${d.parties.map(p=>`<option value="${p.id}" ${x.speaker===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}${k==='whoSpeaking'?`<option value="both" ${x.speaker==='both'?'selected':''}>${esc(t('bothCall'))}</option>`:''}</select></label>`;
   let h=sheetHead(t('addEvidence'),esc(tx(d.title)))+`<div class="src-grid">${SRC.map(([k,i])=>`<button class="src" aria-pressed="${x.type===k}" data-act="srcType" data-v="${k}">${ic(i,20)}<span>${esc(t('src_'+k))}</span><span class="tiny">${esc(t('srcSub_'+k))}</span></button>`).join('')}</div>`;
   h+=`<div class="sample-bar"><span class="tiny">${esc(t('sampleHint'))}</span><button class="btn sec sm" data-act="fillSample">${ic('spark',16)} ${esc(t('fillSample'))}</button></div>`;
-  if(x.type==='paste') h+=`<label class="field">${esc(t('pasteLabel'))}<textarea class="inp" id="inpText" data-input="text" placeholder="18/10/26, 10:02 am - Anjali: …">${esc(x.text)}</textarea></label>`;
+  if(x.type==='paste') h+=`<label class="field">${esc(t('pasteLabel'))}<textarea class="inp" id="inpText" data-input="text" maxlength="200000" placeholder="18/10/26, 10:02 am - Anjali: …">${esc(x.text)}</textarea></label>`;
   if(x.type==='whatsapp') h+=`${filePick('txt','.txt,text/plain')}<p class="tiny">${esc(t('exportHint'))}</p>`;
-  if(x.type==='voice') h+=`${filePick('audio','audio/*,video/mp4,video/3gpp,video/webm,.mp4,.m4a,.opus,.ogg,.mp3,.aac,.wav,.amr,.3gp,.webm',t('audioTypes'))}${x.audioURL?`<audio controls src="${esc(x.audioURL)}" style="width:100%"></audio>`:''}<div class="asr-box stack-s"><b class="row" style="gap:8px">${ic('mic',18)} ${esc(t('asrTitle'))}</b><div class="asr-opts"><label class="field">${esc(t('asrLangLbl'))}<select class="sel" data-change="asrLang">${LANGS.map(l=>`<option value="${l.c}" ${(x.asrLang||S.settings.lang)===l.c?'selected':''}>${esc(l.n)}</option>`).join('')}</select></label><label class="field">${esc(t('asrQualLbl'))}<select class="sel" data-change="asrModel">${[['fast','asrFast'],['best','asrBest']].map(([k,l])=>`<option value="${k}" ${(x.asrModel||asrDefaultModel())===k?'selected':''}>${esc(t(l))}</option>`).join('')}</select></label></div>${x.file?`<button class="btn sec sm" data-act="asrRun" ${x.asr&&['prep','load','run'].includes(x.asr.state)?'disabled':''} style="align-self:flex-start">${ic('spark',16)} ${esc(t(x.asr&&x.asr.state==='done'?'asrAgain':'asrStart'))}</button>`:`<span class="tiny">${esc(t('asrPick'))}</span>`}<div id="asrStatus">${asrStatusHtml(x)}</div><p class="tiny">${esc(t('asrPrivacy'))}</p></div><div class="stack-s"><span class="lbl">${esc(t('howRecorded'))}</span>${['sent_by_them','call_both_knew','own_note','secret'].map(k=>`<label class="radio ${x.consent===k?'on':''}"><input type="radio" name="consent" value="${k}" ${x.consent===k?'checked':''} data-change="consent"><span>${esc(t('c_'+k))}</span></label>`).join('')}${x.consent==='secret'?`<div class="note bad">${esc(t('secretWarn'))}</div>`:''}<label class="check"><input type="checkbox" ${x.party?'checked':''} data-change="party"><span>${esc(t('partOf'))}</span></label></div>${who('whoSpeaking')}<label class="field">${esc(t('whenSent'))}<input class="inp" type="datetime-local" data-change="srcTime" value="${esc(x.srcTime)}"></label><label class="field">${esc(t('transcript'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label><p class="tiny">${esc(t('transcriptHint'))}</p>`;
+  if(x.type==='voice') h+=`${filePick('audio','audio/*,video/mp4,video/3gpp,video/webm,.mp4,.m4a,.opus,.ogg,.mp3,.aac,.wav,.amr,.3gp,.webm',t('audioTypes'))}${x.audioURL?`<audio controls src="${esc(x.audioURL)}" style="width:100%"></audio>`:''}<div class="asr-box stack-s"><b class="row" style="gap:8px">${ic('mic',18)} ${esc(t('asrTitle'))}</b><div class="asr-opts"><label class="field">${esc(t('asrLangLbl'))}<select class="sel" data-change="asrLang">${LANGS.map(l=>`<option value="${l.c}" ${(x.asrLang||S.settings.lang)===l.c?'selected':''}>${esc(l.n)}</option>`).join('')}</select></label><label class="field">${esc(t('asrQualLbl'))}<select class="sel" data-change="asrModel">${[['fast','asrFast'],['best','asrBest']].map(([k,l])=>`<option value="${k}" ${(x.asrModel||asrDefaultModel())===k?'selected':''}>${esc(t(l))}</option>`).join('')}</select></label></div>${x.file?`<button class="btn sec sm" data-act="asrRun" ${x.asr&&['prep','load','run'].includes(x.asr.state)?'disabled':''} style="align-self:flex-start">${ic('spark',16)} ${esc(t(x.asr&&x.asr.state==='done'?'asrAgain':'asrStart'))}</button>`:`<span class="tiny">${esc(t('asrPick'))}</span>`}<div id="asrStatus">${asrStatusHtml(x)}</div><p class="tiny">${esc(t('asrPrivacy'))}</p></div><div class="stack-s"><span class="lbl">${esc(t('howRecorded'))}</span>${['sent_by_them','call_both_knew','own_note','secret'].map(k=>`<label class="radio ${x.consent===k?'on':''}"><input type="radio" name="consent" value="${k}" ${x.consent===k?'checked':''} data-change="consent"><span>${esc(t('c_'+k))}</span></label>`).join('')}${x.consent==='secret'?`<div class="note bad">${esc(t('secretWarn'))}</div>`:''}<label class="check"><input type="checkbox" ${x.party?'checked':''} data-change="party"><span>${esc(t('partOf'))}</span></label></div>${who('whoSpeaking')}<label class="field">${esc(t('whenSent'))}<input class="inp" type="datetime-local" data-change="srcTime" min="2005-01-01T00:00" max="${esc(nowISO().slice(0,16))}" value="${esc(x.srcTime)}"></label><label class="field">${esc(t('transcript'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label><p class="tiny">${esc(t('transcriptHint'))}</p>`;
   if(x.type==='pdf') h+=`${filePick('pdf','application/pdf,.pdf')}${x.fileHash?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
   if(x.type==='photo') h+=`${filePick('image','image/*')}${x.thumb?`<img class="thumb" src="${esc(x.thumb)}" alt="">`:''}${x.thumb&&SAMPLE?`<button class="btn sec sm" data-act="ocr">${esc(t('readPhoto'))}</button>`:''}${x.thumb||x.text?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
   if(x.status) h+=`<div class="note busy">${x.busy?'<span class="spin"></span>':''}<span>${esc(x.status)}</span></div>`;
@@ -1732,7 +1841,7 @@ const loadScript=src=>new Promise((res,rej)=>{ const s=document.createElement('s
 const shrink=(url,max)=>new Promise(res=>{ const img=new Image(); img.onload=()=>{ const k=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',.82)); }; img.onerror=()=>res(url); img.src=url; });
 async function ocrBlobs(blobs){ const {text}=await SAMPLE('Transcribe all text in these images exactly as written, line by line, in the original language and script. Do not summarise, translate, correct or add anything. If it is a chat screenshot, write each message as: [date time] Sender: message. Output only the transcription.',{images:blobs,modelTier:'default'}); return text.trim(); }
 async function onFile(kind,file){
-  const x=ui.inp; if(!file) return; x.fileName=file.name; x.fileKind=kind; x.file=file;
+  const x=ui.inp; if(!file) return; const fe=checkFile(kind,file); if(fe){ toast(msg(fe)); return; } x.fileName=file.name; x.fileKind=kind; x.file=file;
   const buf=await readAs(file,'buf'); x.fileHash=await sha256Bytes(new Uint8Array(buf));
   if(kind==='txt'){ x.text=new TextDecoder().decode(buf); x.status=t('msgsFound',{n:parseChat(x.text).length}); }
   if(kind==='audio'){ x.audioURL=URL.createObjectURL(file); x.status=''; x.asr=null; setTimeout(()=>transcribe(x),0); }
@@ -1756,6 +1865,8 @@ async function saveRecord(){
   if(x.type==='voice'){ if(!x.fileHash) return toast(t('e_file')); if(!x.consent) return toast(t('e_consent')); if(x.consent==='secret') return toast(t('e_secret')); if(!x.party) return toast(t('e_part')); }
   else if(['whatsapp','pdf','photo'].includes(x.type)&&!x.fileHash) return toast(t('e_file'));
   if(!text) return toast(t('e_text'));
+  if(text.length>(x.type==='voice'?50000:200000)) return toast(t('v_tooLong'));
+  if(x.srcTime){ const te=V.pastTime(x.srcTime); if(te) return showErrs([[document.querySelector('[data-change="srcTime"]'),te]]); }
   const id='CR-'+(++S.counter), up=nowISO(), srcTs=x.srcTime?x.srcTime+':00'+TZ:null; let messages, method='verbatim';
   if(x.type==='paste'||x.type==='whatsapp'){ messages=parseChat(text); if(!messages.length) return toast(t('e_nomsg')); }
   else { const sender=x.speaker==='both'?t('bothCall'):partyName(d,x.speaker); messages=text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:srcTs,sender,text:p.trim()})).filter(m=>m.text); method=x.type==='voice'?'transcript':x.method||'ocr'; }
@@ -1952,8 +2063,15 @@ function copy(text,fb){ const sel=()=>{ if(fb){ fb.select(); } toast(t('copied')
 function syncInp(){ const ta=$('#inpText'); if(ta&&ui.inp) ui.inp.text=ta.value; }
 
 /* ---------- events ---------- */
+const BUSY_ACTS=new Set(['saveRecord','createDeal','doSign','doEsign','freeze','newRev','authOtp','authVerify','rsSubmit','rsFreeze','downloadQuote','exportFormal','recDel','deleteAcct','lawApprove','lawNotes','apiSave','roomSave','requestLawyer','createDraft','runCompare','ndSample','logout','confirmNotary','saveParties']), RUNNING=new Set();
 document.addEventListener('click',async e=>{
-  const a=e.target.closest('[data-act]'); if(!a) return;
+  const a=e.target.closest('[data-act]'); if(!a||a.disabled) return;
+  const act=a.dataset.act;
+  if(!actAllowed(act,a)){ e.preventDefault(); console.warn('[DraftIt] blocked',act); toast(t('notAllowed')); return; }
+  if(BUSY_ACTS.has(act)&&RUNNING.has(act)) return; RUNNING.add(act);
+  try{ await handleAct(e,a); }catch(err){ console.error('[DraftIt]',act,err); toast(t('oops')); }finally{ RUNNING.delete(act); }
+});
+async function handleAct(e,a){
   const act=a.dataset.act, d=ui.dealId?deal():null;
   switch(act){
     case 'go': if(!$('#sheetWrap').hidden) closeSheet(); ui.view=a.dataset.v; stopSpeak(true); window.scrollTo(0,0); render(); break;
@@ -1967,7 +2085,8 @@ document.addEventListener('click',async e=>{
     case 'pickDeal': ui.dealId=a.dataset.id; ui.view='deal'; ui.tab='evidence'; render(); ui.inp=null; addEvidenceSheet(); break;
     case 'newDeal': newDealSheet(); break;
     case 'ndRole': $('#ndRole').querySelectorAll('button').forEach(b=>{ b.setAttribute('aria-checked',b===a); b.classList.toggle('on',b===a); }); break;
-    case 'createDeal': { const title=$('#ndTitle').value.trim(), name=$('#ndName').value.trim(), org=$('#ndOrg').value.trim(); if(!title||!name) return toast(t('e_deal'));
+    case 'createDeal': { const ti=$('#ndTitle'), nm=$('#ndName'), og=$('#ndOrg'), title=clean(ti.value), name=clean(nm.value), org=clean(og.value);
+      if(!showErrs([[ti,V.title(title)],[nm,V.name(name)],[og,V.biz(org)]])) break;
       const pick=$('#ndRole [aria-checked="true"]'); if(!pick){ toast(t('sidePick')); const r=$('#ndRole'); if(r){ r.classList.add('shake'); setTimeout(()=>r.classList.remove('shake'),500); } return; }
       const role=pick.dataset.v, id='D-'+Date.now().toString(36).slice(-4).toUpperCase();
       const nd=newDealObj(id,title,nowISO(),[{id:'me',name:S.settings.userName,org:S.settings.business,role},{id:'cp',name,org:org||name,role:role==='Seller'?'Buyer':'Seller'}]); nd.terms=fillMissing({});
@@ -1994,7 +2113,8 @@ document.addEventListener('click',async e=>{
     case 'copyText': copy(a.dataset.text); break;
     case 'clauseSheet': clauseSheet(a.dataset.id); break;
     case 'editClause': editClauseSheet(a.dataset.id); break;
-    case 'proposeEdit': { const c=d.draft.clauses.find(x=>x.id===a.dataset.id), text=$('#edText').value.trim(), open=$('#edOpen').value.trim(); if(!text) return toast(t('e_empty'));
+    case 'proposeEdit': { const c=d.draft.clauses.find(x=>x.id===a.dataset.id), te=$('#edText'), oe=$('#edOpen'), text=cleanText(te.value,5000), open=cleanText(oe.value,2000);
+      if(!showErrs([[te,V.len(text,5,1500,'v_edit')],[oe,open.length>500?'v_open':null]])) break;
       if(text===tx(c.text)&&open===tx(c.open)){ closeSheet(); break; }
       c.pending={text,open,by:ui.actor,at:nowISO()}; log(d,c.id,d.draft.rev,'proposed',text,partyName(d,ui.actor),nowISO()); save(); closeSheet(); ui.keep=true; render(); toast(t('o_sent')); ensureTr(); break; }
     case 'acceptChange': { const c=d.draft.clauses.find(x=>x.id===a.dataset.id); c.text=c.pending.text; c.open=c.pending.open; c.edited=true; log(d,c.id,d.draft.rev,'accepted',c.text,partyName(d,ui.actor),nowISO(),{k:'n_proposedBy',p:{name:partyName(d,c.pending.by)}}); c.pending=null; save(); ui.keep=true; render(); toast(t('o_accepted')); break; }
@@ -2006,7 +2126,9 @@ document.addEventListener('click',async e=>{
     case 'newRev': newRevision(d); render(); toast(t('o_newRev',{n:d.draft.rev})); ensureTr(); break;
     case 'signSheet': signSheet(a.dataset.p); break;
     case 'sigClear': initSigPad(); break;
-    case 'doSign': { const v=latestVersion(d); if(!$('#sigOk').checked) return toast(t('e_tick')); const method=(document.querySelector('input[name=sigm]:checked')||{}).value||'drawn'; if(method==='drawn'&&!sig.has) return toast(t('e_draw'));
+    case 'doSign': { const v=latestVersion(d); if(v.signatures.some(x=>x.party===a.dataset.p)) return toast(t('v_alreadySigned'));
+      if(a.dataset.p!=='me'){ const sn=$('#sigName'), pn=d.parties.find(x=>x.id===a.dataset.p).name, nz=x=>clean(x).toLowerCase(); if(!sn||nz(sn.value)!==nz(pn)) return showErrs([[sn,{k:'v_sigName',p:{name:pn}}]]); }
+      if(!$('#sigOk').checked) return toast(t('e_tick')); const method=(document.querySelector('input[name=sigm]:checked')||{}).value||'drawn'; if(method==='drawn'&&!sig.has) return toast(t('e_draw'));
       const p=d.parties.find(x=>x.id===a.dataset.p); await signVersion(v,p,sig.has?sig.c.toDataURL('image/png'):null,method,nowISO()); save(); closeSheet(); ui.keep=true; render();
       toast(v.signatures.length>=2?t('o_signedBoth',{n:v.rev}):t('o_signedOne',{name:first(d.parties.find(x=>!v.signatures.some(s=>s.party===x.id)).name)})); break; }
     case 'verify': { const v=d.versions.find(x=>x.rev===+a.dataset.rev), r=await verifyVersion(v,false); ui.verify[d.id+':'+v.rev]=r; if(a.dataset.sheet) $('#verOut').innerHTML=verifyHtml(r); else { ui.keep=true; render(); } break; }
@@ -2017,9 +2139,11 @@ document.addEventListener('click',async e=>{
     case 'requestLawyer': { const l=LAWYERS.find(x=>x.id===a.dataset.l), v=latestVersion(d); d.lawyerReq={rev:v.rev,lawyerId:l.id,name:l.name,fee:l.fee,platform:PLATFORM_FEE,at:nowISO(),by:S.settings.userName,status:'pending'}; ui.pickL=null; save(); closeSheet(); ui.keep=true; render(); toast(t('reqPending',{name:l.name})); break; }
     case 'openAsLawyer': { const l=LAWYERS.find(x=>x.id===d.lawyerReq.lawyerId); ui.demoBack=S.session; useAccount(l.acct); ui.view='deal'; ui.tab='agreement'; ui.tut=null; window.scrollTo(0,0); render(); break; }
     case 'demoBack': { const id=ui.demoBack, dl=ui.dealId; ui.demoBack=null; useAccount(id); ui.view=dl?'deal':'home'; ui.tab='agreement'; window.scrollTo(0,0); render(); break; }
-    case 'lawApprove': { const v=latestVersion(d), ac=acct(), note=(($('#lawNotes')||{}).value||'').trim(); v.lawyer={lawyerId:ac.lawyerId,name:ac.name,enrol:ac.enrol,at:nowISO(),hash:v.hash,fee:d.lawyerReq.fee,dsc:true}; if(note) v.lawyer.note=note; else { const open=v.payload.clauses.filter(c=>c.open).length; v.lawyer.noteKey=open?'lawyerNoteOpen':'lawyerNoteOk'; v.lawyer.noteP={n:open}; }
+    case 'lawApprove': { const v=latestVersion(d), ac=acct(), ne=$('#lawNotes'), note=cleanText(ne&&ne.value,5000); if(!d.lawyerReq||d.lawyerReq.lawyerId!==ac.lawyerId||d.lawyerReq.status!=='pending') return toast(t('notAllowed'));
+      if(note&&!showErrs([[ne,V.len(note,5,2000,'v_notes')]])) break; v.lawyer={lawyerId:ac.lawyerId,name:ac.name,enrol:ac.enrol,at:nowISO(),hash:v.hash,fee:d.lawyerReq.fee,dsc:true}; if(note) v.lawyer.note=note; else { const open=v.payload.clauses.filter(c=>c.open).length; v.lawyer.noteKey=open?'lawyerNoteOpen':'lawyerNoteOk'; v.lawyer.noteP={n:open}; }
       d.lawyerReq.status='approved'; d.lawyerReq.doneAt=nowISO(); save(); ui.keep=true; render(); toast(t('o_lawyerOk',{name:ac.name,n:v.rev})); ensureTr(); break; }
-    case 'lawNotes': { const note=(($('#lawNotes')||{}).value||'').trim(); if(!note) return toast(t('e_empty')); d.lawyerReq.status='notes'; d.lawyerReq.notes=note; d.lawyerReq.doneAt=nowISO(); save(); ui.view='home'; window.scrollTo(0,0); render(); toast(t('notesSent')); break; }
+    case 'lawNotes': { const ne=$('#lawNotes'), note=cleanText(ne&&ne.value,5000), ac=acct(); if(!d.lawyerReq||d.lawyerReq.lawyerId!==ac.lawyerId||d.lawyerReq.status!=='pending') return toast(t('notAllowed'));
+      if(!showErrs([[ne,V.len(note,5,2000,'v_notes')]])) break; d.lawyerReq.status='notes'; d.lawyerReq.notes=note; d.lawyerReq.doneAt=nowISO(); save(); ui.view='home'; window.scrollTo(0,0); render(); toast(t('notesSent')); break; }
     case 'docView': ui.docView=a.dataset.v; ui.keep=true; stopSpeak(true); render(); break;
     case 'catSheet': catSheet(); break;
     case 'setCat': d.category={id:a.dataset.v,by:'user'}; save(); closeSheet(); ui.keep=true; render(); break;
@@ -2029,12 +2153,14 @@ document.addEventListener('click',async e=>{
     case 'rsSubmit': { if(!d.frozen) await freezeEvidence(d); d.report={reason:(ui.rs||{}).reason||'nopay',at:nowISO()}; save(); reportSheet(); ui.keep=true; render(); toast(t('rsDone')); break; }
     case 'disputeSheet': disputeSheet(); break;
     case 'partySheet': partySheet(); break;
-    case 'saveParties': { syncParties(d); save(); closeSheet(); ui.keep=true; render(); toast(t('o_savedDetails')); break; }
+    case 'saveParties': { if(!showErrs(partyErrs(d))) break; syncParties(d); save(); closeSheet(); ui.keep=true; render(); toast(t('o_savedDetails')); break; }
     case 'quoteSheet': quoteSheet(); break;
-    case 'downloadQuote': { const q=ui.q; await saveFile(`quotation-${q.no.toLowerCase()}.html`,quoteFile(d,q)); break; }
+    case 'downloadQuote': { const q=ui.q, el=k=>document.querySelector(`[data-q="${k}"]`); ['no','desc','hsn'].forEach(k=>{ q[k]=clean(q[k]); });
+      if(!showErrs([[el('no'),V.quoteNo(q.no)],[el('valid'),V.days(q.valid)],[el('desc'),V.desc(q.desc)],[el('hsn'),V.hsn(q.hsn)],[el('qty'),V.qty(q.qty)],[el('rate'),V.rate(q.rate)]])) break;
+      await saveFile(`quotation-${String(q.no).toLowerCase().replace(/[^a-z0-9-]/g,'-')}.html`,quoteFile(d,q)); break; }
     case 'exportFormal': await saveFile(`agreement-${d.id.toLowerCase()}-v${d.draft?d.draft.rev:latestVersion(d).rev}.html`,formalFile(d)); break;
     case 'notarySheet': notarySheet(); break;
-    case 'confirmNotary': { const dt=$('#notDate').value; if(!dt) break; S.notary=S.notary||[]; S.notary.push({by:S.session,date:dt,at:nowISO()}); save(); closeSheet(); render(); toast(t('notaryBooked',{date:fmtD(dt,{day:'numeric',month:'long'})})); break; }
+    case 'confirmNotary': { const ne=$('#notDate'), dt=ne.value; if(!showErrs([[ne,V.futureDate(dt,90)]])) break; S.notary=S.notary||[]; S.notary.push({by:S.session,date:dt,at:nowISO()}); save(); closeSheet(); render(); toast(t('notaryBooked',{date:fmtD(dt,{day:'numeric',month:'long'})})); break; }
     case 'adSheet': adSheet(a.dataset.v); break;
     case 'snipToggle': S.settings.snip=!S.settings.snip; save(); if(S.settings.snip){ SN.open=true; toast(t('snipOnToast')); } else { SN.open=false; stopShare(); if(SN.pip&&!SN.pip.closed) SN.pip.close(); toast(t('snipOffToast')); } ui.keep=true; render(); break;
     case 'snipOpen': if(SN.pip&&!SN.pip.closed){ SN.pip.focus(); break; } SN.open=true; renderSnip(); break;
@@ -2047,13 +2173,19 @@ document.addEventListener('click',async e=>{
     case 'roomAs': ui.roomAs=a.dataset.v; render(); break;
     case 'chip': { const dd=deal(ui.roomDeal), cp=dd.parties.find(x=>x.id!=='me'); ui.roomDraft=t('sg_'+a.dataset.k); render(); const ri=$('#roomInput'); if(ri){ ri.focus(); ri.setSelectionRange(ri.value.length,ri.value.length); } break; }
     case 'roomInvite': inviteSheet(); break;
-    case 'authJoin': { const A=ui.auth, code=roomCode(A.code||''); if(code.length<2) return toast(t('needCode')); ui.guestName=(A.gname||'').trim()||'Guest'; ui.view='room'; joinByCode(code); break; }
+    case 'authJoin': { const A=ui.auth, code=roomCode(A.code||''), q=k=>document.querySelector(`[data-auth="${k}"]`); A.gname=clean(A.gname||'');
+      if(!showErrs([[q('code'),V.code(code)],[q('gname'),V.name(A.gname,false)]])) break; ui.guestName=A.gname||'Guest'; ui.view='room'; joinByCode(code); break; }
     case 'certSheet': certSheet(a.dataset.p); break;
     case 'verifySig': { const v=latestVersion(d), sg=v.signatures.find(x=>x.party===a.dataset.p), h2=await sha256Text(canon(sigBody(sg))), imgOk=!sg.img||!sg.imgSha||(await sha256Text(sg.img))===sg.imgSha; $('#sigOut').innerHTML=verifyHtml({ok:h2===sg.sigHash&&sg.versionHash===v.hash&&imgOk,stored:sg.sigHash,computed:h2}); break; }
     case 'sgMethod': ui.sg.m=a.dataset.v; signSheet(ui.sg.p); break;
     case 'sgBack': ui.sg.step='id'; ui.sg.otp=''; signSheet(ui.sg.p); break;
-    case 'sgOtp': { const g=ui.sg; g.vid=String(g.vid||'').replace(/\D/g,''); if(!/^(\d{12}|\d{16})$/.test(g.vid)) return toast(t('needAadhaar')); g.step='otp'; signSheet(g.p); const o=document.querySelector('#sheet .otp'); if(o) o.focus(); break; }
-    case 'doEsign': { const g=ui.sg, v=latestVersion(d); if(!/^\d{6}$/.test(String(g.otp||''))) return toast(t('needOtp')); if(!g.ok) return toast(t('e_tick'));
+    case 'sgOtp': { const g=ui.sg, key='esign:'+d.id+':'+g.p; g.vid=String(g.vid||'').replace(/\D/g,''); if(!showErrs([[document.querySelector('[data-sg="vid"]'),V.aadhaar(g.vid)]])) break;
+      const lk=lockLeft(key); if(lk) return toast(t('v_locked',{m:lk})); g.demoCode=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000); g.otp=''; g.step='otp'; signSheet(g.p); const o=document.querySelector('#sheet .otp'); if(o) o.focus(); break; }
+    case 'doEsign': { const g=ui.sg, v=latestVersion(d), key='esign:'+d.id+':'+g.p; g.otp=String(g.otp||'').replace(/\s/g,''); if(v.signatures.some(x=>x.party===g.p)) return toast(t('v_alreadySigned'));
+      if(!showErrs([[document.querySelector('#sheet .otp'),V.otp(g.otp)]])) break; if(!g.ok) return toast(t('e_tick'));
+      const lk=lockLeft(key); if(lk) return toast(t('v_locked',{m:lk}));
+      if(!g.demoCode||g.otp!==g.demoCode){ const locked=noteWrong(key); g.otp=''; if(locked){ g.step='id'; g.demoCode=null; signSheet(g.p); return toast(t('v_locked',{m:10})); } signSheet(g.p); showErrs([[document.querySelector('#sheet .otp'),{k:'v_codeLeft',p:{n:triesLeft(key)}}]]); break; }
+      clearWrong(key);
       const p=d.parties.find(x=>x.id===g.p), rnd=n=>Array.from(crypto.getRandomValues(new Uint8Array(n))).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
       const cert={aadhaar:'XXXX XXXX '+g.vid.slice(-4),provider:'Demo eSign provider',txn:'ESP-'+rnd(6),serial:rnd(8),docHash:v.hash};
       await signVersion(v,p,null,'aadhaar',nowISO(),cert); ui.sg=null; save(); closeSheet(); ui.keep=true; render();
@@ -2063,13 +2195,13 @@ document.addEventListener('click',async e=>{
     case 'tamperIntegrity': integritySheet(await integrityCheck(d,true)); break;
     case 'compareSheet': ui.cmp=null; compareSheet(); break;
     case 'cmpSample': ui.cmp=ui.cmp||{text:'',name:'',busy:false,status:''}; ui.cmp.text=SAMPLE_PO; ui.cmp.name='Sample purchase order terms.txt'; ui.cmp.status=''; compareSheet(); break;
-    case 'runCompare': { const ta=$('#cmpText'); if(ta&&ui.cmp) ui.cmp.text=ta.value; await runCompare(d); break; }
+    case 'runCompare': { const ta=$('#cmpText'); if(ta&&ta.value.length>100000) return toast(t('v_tooLong')); if(ta&&ui.cmp) ui.cmp.text=ta.value; await runCompare(d); break; }
     case 'compareResult': compareResultSheet(a.dataset.id); break;
     case 'fillSample': syncInp(); await fillSample(); break;
     case 'ndSample': { closeSheet(); const nd=cloneTemplate(0,S.session); ui.dealId=nd.id; ui.view='deal'; ui.tab='terms'; window.scrollTo(0,0); render(); toast(t('o_sampleAdded')); break; }
     case 'readEl': readEl(a); break;
     case 'setTextSize': S.settings.textSize=a.dataset.v; try{ localStorage.setItem('draftit.ts',a.dataset.v); }catch(err){} save(); applyTextSize(); if(!$('#sheetWrap').hidden) langSheet(); else { ui.keep=true; render(); } break;
-    case 'apiSave': { const k=(($('#apiKey')||{}).value||'').trim(); if(!k) break; const smp=makeApiSample(k); try{ await smp('Reply with the single word OK.',{modelTier:'quick'}); }catch(err){ return toast(t('apiBad')); } try{ localStorage.setItem('draftit.key',k); }catch(err){} SAMPLE=smp; S.settings.ai=true; save(); ui.keep=true; render(); toast(t('apiSaved')); ensureTr(); break; }
+    case 'apiSave': { const ki=$('#apiKey'), k=clean(ki&&ki.value); if(!showErrs([[ki,V.apiKey(k)]])) break; const smp=makeApiSample(k); try{ await smp('Reply with the single word OK.',{modelTier:'quick'}); }catch(err){ return toast(t('apiBad')); } try{ localStorage.setItem('draftit.key',k); }catch(err){} SAMPLE=smp; S.settings.ai=true; save(); ui.keep=true; render(); toast(t('apiSaved')); ensureTr(); break; }
     case 'apiRemove': try{ localStorage.removeItem('draftit.key'); }catch(err){} SAMPLE=null; setupCloudAI(); ui.keep=true; render(); toast(t('apiRemoved')); break;
     case 'installApp': if(INSTALL){ INSTALL.prompt(); try{ await INSTALL.userChoice; }catch(err){} INSTALL=null; ui.keep=true; render(); } break;
     case 'rmLogo': { syncParties(d); const [pid,k]=a.dataset.v.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=''; save(); partySheet(); break; }
@@ -2085,26 +2217,41 @@ document.addEventListener('click',async e=>{
     case 'authMode': ui.auth.mode=a.dataset.v; ui.auth.step='form'; render(); break;
     case 'authRole': ui.auth.role=a.dataset.v; render(); break;
     case 'authBack': ui.auth.step='form'; ui.auth.otp=''; render(); break;
-    case 'authOtp': if(SB){ const A=ui.auth; A.email=String(A.email||'').trim().toLowerCase(); A.mobile=String(A.mobile||'').replace(/\D/g,'');
-      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(A.email)) return toast(t('needEmail'));
-      if(A.mode==='signup'){ if(!A.name.trim()) return toast(t('needName')); if(A.mobile&&!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName')); if(A.role==='lawyer'&&!A.enrol.trim()) return toast(t('needEnrol')); if(!A.terms) return toast(t('needTerms')); }
-      A.busy=true; render(); let error=null;
-      try{ ({error}=await SB.auth.signInWithOtp({email:A.email,options:{shouldCreateUser:A.mode==='signup',data:A.mode==='signup'?{name:A.name.trim(),role:A.role==='lawyer'?'lawyer':'user',business:A.business.trim()}:undefined}})); }catch(err){ error=err; }
-      A.busy=false; if(error){ render(); return toast(A.mode==='login'&&/signup|not found|not allowed/i.test(String(error.message||''))?t('noAccountEmail'):t('codeSendFail')); }
-      A.step='otp'; A.otp=''; render(); const o=document.querySelector('.otp'); if(o) o.focus(); break; }
-      { const A=ui.auth; A.mobile=A.mobile.replace(/\D/g,''); if(!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName'));
-      if(A.mode==='signup'){ if(!A.name.trim()) return toast(t('needName')); if(A.role==='lawyer'&&!A.enrol.trim()) return toast(t('needEnrol')); if(!A.terms) return toast(t('needTerms')); }
-      else if(!Object.values(S.accounts).some(x=>x.mobile===A.mobile)) return toast(t('noAccountPhone'));
-      A.step='otp'; render(); const o=document.querySelector('.otp'); if(o) o.focus(); break; }
-    case 'authVerify': if(SB){ const A=ui.auth, code=String(A.otp||'').replace(/\D/g,''); if(!/^\d{6,10}$/.test(code)) return toast(t('needOtp'));
-      A.busy=true; render(); let res=null;
-      try{ res=await SB.auth.verifyOtp({email:A.email,token:code,type:'email'}); }catch(err){ res={error:err}; }
-      if(res.error||!res.data||!res.data.user){ A.busy=false; render(); return toast(t('codeBad')); }
-      try{ await loadCloud(res.data.user); }catch(err){ A.busy=false; cloud.uid=null; render(); return toast(t('cloudLoadFail')); }
-      ui.demoBack=null; afterLogin(); break; }
-      { const A=ui.auth; if(!/^\d{6}$/.test(A.otp)) return toast(t('needOtp'));
-      if(A.mode==='signup'){ const id='u_'+A.name.trim().toLowerCase().replace(/[^a-z]/g,'').slice(0,8)+'_'+Date.now().toString(36).slice(-4); S.accounts[id]={id,name:A.name.trim(),mobile:A.mobile,role:A.role==='lawyer'?'lawyer':'user',business:A.role==='lawyer'?'':A.business.trim(),train:!!A.train,tutDone:false,created:nowISO()}; if(A.role==='lawyer') Object.assign(S.accounts[id],{lawyerId:'lw_'+id,enrol:A.enrol.trim(),bar:A.bar,fee:+A.fee||0}); useAccount(id); if(A.role!=='lawyer'){ cloneTemplate(1,id); cloneTemplate(0,id); } }
-      else { const ac=Object.values(S.accounts).find(x=>x.mobile===A.mobile); if(!ac) return toast(t('noAccountPhone')); useAccount(ac.id); }
+    case 'authOtp': { const A=ui.auth, q=k=>document.querySelector(`[data-auth="${k}"]`);
+      ['name','business','enrol'].forEach(k=>{ if(typeof A[k]==='string') A[k]=clean(A[k]); });
+      A.email=clean(A.email||'').toLowerCase(); A.mobile=String(A.mobile||'').replace(/\D/g,''); A.enrol=String(A.enrol||'').toUpperCase().replace(/\s+/g,''); A.fee=String(A.fee==null?'':A.fee).trim();
+      const errs=[];
+      if(A.mode==='signup'){ errs.push([q('name'),V.name(A.name)]); if(SB) errs.push([q('email'),V.email(A.email)]); errs.push([q('mobile'),V.mobile(A.mobile,!SB)]);
+        if(!SB&&!V.mobile(A.mobile)&&Object.values(S.accounts).some(x=>x.mobile===A.mobile)) errs.push([q('mobile'),'v_mobileTaken']);
+        if(A.role==='lawyer') errs.push([q('enrol'),V.enrol(A.enrol)],[q('fee'),V.fee(A.fee)]); else errs.push([q('business'),V.biz(A.business)]);
+        if(!A.terms) errs.push([q('terms'),'v_terms']); }
+      else if(SB) errs.push([q('email'),V.email(A.email)]);
+      else { const e1=V.mobile(A.mobile); errs.push([q('mobile'),e1||(Object.values(S.accounts).some(x=>x.mobile===A.mobile)?null:'noAccountPhone')]); }
+      if(!showErrs(errs)) break;
+      const who=SB?A.email:A.mobile, lk=lockLeft(who); if(lk) return toast(t('v_locked',{m:lk}));
+      const wait=A.sentAt&&A.sentTo===who+A.mode?Math.ceil((A.sentAt+30e3-Date.now())/1000):0; if(wait>0){ if(A.step!=='otp'){ A.step='otp'; render(); } return toast(t('v_wait',{s:wait})); }
+      if(SB){ A.busy=true; render(); let error=null;
+        try{ ({error}=await SB.auth.signInWithOtp({email:A.email,options:{shouldCreateUser:A.mode==='signup',data:A.mode==='signup'?{name:A.name,role:A.role==='lawyer'?'lawyer':'user',business:A.role==='lawyer'?'':A.business}:undefined}})); }catch(err){ error=err; }
+        A.busy=false; if(error){ render(); const m=String(error.message||''); return toast(A.mode==='login'&&/signup|not found|not allowed/i.test(m)?t('noAccountEmail'):/rate|seconds|too many/i.test(m)?t('v_wait',{s:60}):t('codeSendFail')); } }
+      else A.demoCode=String(100000+crypto.getRandomValues(new Uint32Array(1))[0]%900000);
+      A.sentAt=Date.now(); A.sentTo=who+A.mode; A.step='otp'; A.otp=''; render(); const o=document.querySelector('.otp'); if(o) o.focus(); break; }
+    case 'authVerify': { const A=ui.auth, code=String(A.otp||'').replace(/\s/g,''), who=SB?A.email:A.mobile;
+      if(!showErrs([[document.querySelector('.otp'),V.otp(code,6,SB?10:6)]])) break;
+      const lk=lockLeft(who); if(lk){ A.step='form'; render(); return toast(t('v_locked',{m:lk})); }
+      if(SB){ A.busy=true; render(); let res=null;
+        try{ res=await SB.auth.verifyOtp({email:A.email,token:code,type:'email'}); }catch(err){ res={error:err}; }
+        if(res.error||!res.data||!res.data.user){ A.busy=false; A.otp=''; const locked=noteWrong(who); if(locked) A.step='form'; render(); if(locked) return toast(t('v_locked',{m:10})); showErrs([[document.querySelector('.otp'),{k:'v_codeLeft',p:{n:triesLeft(who)}}]]); break; }
+        clearWrong(who);
+        try{ await loadCloud(res.data.user); }catch(err){ A.busy=false; cloud.uid=null; render(); return toast(t('cloudLoadFail')); }
+        ui.demoBack=null; afterLogin(); break; }
+      if(!A.demoCode||code!==A.demoCode){ const locked=noteWrong(who); A.otp=''; if(locked){ A.step='form'; A.demoCode=null; render(); return toast(t('v_locked',{m:10})); } render(); showErrs([[document.querySelector('.otp'),{k:'v_codeLeft',p:{n:triesLeft(who)}}]]); break; }
+      clearWrong(who); A.demoCode=null;
+      if(A.mode==='signup'){ if(Object.values(S.accounts).some(x=>x.mobile===A.mobile)){ A.step='form'; render(); return toast(t('v_mobileTaken')); }
+        const id='u_'+Array.from(crypto.getRandomValues(new Uint8Array(5))).map(x=>x.toString(16).padStart(2,'0')).join('');
+        S.accounts[id]={id,name:A.name,mobile:A.mobile,role:A.role==='lawyer'?'lawyer':'user',business:A.role==='lawyer'?'':A.business,train:!!A.train,tutDone:false,created:nowISO()};
+        if(A.role==='lawyer') Object.assign(S.accounts[id],{lawyerId:'lw_'+id,enrol:A.enrol,bar:A.bar,fee:+A.fee});
+        useAccount(id); if(A.role!=='lawyer'){ cloneTemplate(1,id); cloneTemplate(0,id); } }
+      else { const ac=Object.values(S.accounts).find(x=>x.mobile===A.mobile); if(!ac){ A.step='form'; render(); return toast(t('noAccountPhone')); } useAccount(ac.id); }
       afterLogin(); break; }
     case 'demoLogin': useAccount(a.dataset.id); ui.demoBack=null; afterLogin(); break;
     case 'logoutAsk': openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico">${ic('logout',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('logoutQ'))}</h2><p class="small muted">${esc(t(SB&&cloud.uid?'logoutSubCloud':'logoutSubLocal'))}</p></div><div class="stack-s"><button class="btn danger full" data-act="logout">${esc(t('logOutYes'))}</button><button class="btn sec full" data-act="closeSheet">${esc(t('cancel'))}</button></div>`); break;
@@ -2124,28 +2271,27 @@ document.addEventListener('click',async e=>{
     case 'testVoice': speakItems([{id:'test',text:t('testSentence')}],S.settings.lang); break;
     case 'reset': if(a.dataset.sure){ try{ localStorage.removeItem(STORE); }catch(err){} const keep=S; S=null; render(); S=keep; await seedState(); ui.view='auth'; ui.auth=null; ui.demoBack=null; render(); toast(t('o_reset')); } else { a.dataset.sure='1'; a.textContent=t('resetSure'); } break;
   }
-});
+}
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#sheetWrap').hidden) closeSheet(); });
 document.addEventListener('change',async e=>{
   const el=e.target, k=el.dataset.change, f=el.dataset.file, d=ui.dealId?deal():null;
   if(el.dataset.auth&&ui.auth){ ui.auth[el.dataset.auth]=el.type==='checkbox'?el.checked:el.value; return; }
   if(el.dataset.sg&&ui.sg){ ui.sg[el.dataset.sg]=el.type==='checkbox'?el.checked:el.value; return; }
-  if(el.dataset.cmpfile&&ui.cmp){ const file=el.files[0]; if(!file) return; const ta=$('#cmpText'); if(ta) ui.cmp.text=ta.value; ui.cmp.busy=true; ui.cmp.status=t('cmpReading'); compareSheet(); try{ const r=await fileText(file); ui.cmp.text=r.text; ui.cmp.name=file.name; ui.cmp.status=r.text?'':t('noPdfText'); }catch(err){ ui.cmp.status=t('noPdfText'); } ui.cmp.busy=false; compareSheet(); return; }
-  if(el.dataset.logo&&d){ const file=el.files[0]; if(!file) return; syncParties(d); const [pid,k]=el.dataset.logo.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=await shrinkPng(await readAs(file,'url'),240); save(); partySheet(); return; }
+  if(el.dataset.cmpfile&&ui.cmp){ const file=el.files[0]; if(!file) return; const fe=checkFile('cmp',file); if(fe){ el.value=''; return toast(msg(fe)); } const ta=$('#cmpText'); if(ta) ui.cmp.text=ta.value; ui.cmp.busy=true; ui.cmp.status=t('cmpReading'); compareSheet(); try{ const r=await fileText(file); ui.cmp.text=r.text; ui.cmp.name=file.name; ui.cmp.status=r.text?'':t('noPdfText'); }catch(err){ ui.cmp.status=t('noPdfText'); } ui.cmp.busy=false; compareSheet(); return; }
+  if(el.dataset.logo&&d){ const file=el.files[0]; if(!file||!canEditDeal(d)) return; const fe=checkFile('logo',file); if(fe){ el.value=''; return toast(msg(fe)); } syncParties(d); const [pid,k]=el.dataset.logo.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=await shrinkPng(await readAs(file,'url'),240); save(); partySheet(); return; }
   if(el.dataset.chkfile&&d){ const file=el.files[0]; if(!file) return; const r=d.records.find(x=>x.id===el.dataset.chkfile), h=await sha256Bytes(new Uint8Array(await readAs(file,'buf'))); $('#chkOut').innerHTML=verifyHtml({ok:h===r.sha256,stored:r.sha256,computed:h})+`<span class="tiny">${esc(file.name)}</span>`; return; }
   if(el.dataset.q&&ui.q){ ui.q[el.dataset.q]=el.type==='checkbox'?el.checked:el.value; const tq=$('#qTotal'); if(tq) tq.textContent=rupee(quoteCalc(ui.q).total); return; }
-  if(f){ syncInp(); await onFile(f,el.files[0]); return; }
+  if(f){ syncInp(); await onFile(f,el.files[0]); el.value=''; return; }
   if(!k) return; const s=S.settings;
-  if(k==='setName') s.userName=el.value.trim()||s.userName;
-  if(k==='setBiz') s.business=el.value.trim()||s.business;
+  if(k==='setName'||k==='setBiz'){ const v=clean(el.value), ac=acct(); if(!showErrs([[el,k==='setName'?V.name(v):V.biz(v)]],{focus:false})) return; el.value=v;
+    if(k==='setName'){ s.userName=v; if(ac) ac.name=v; } else { s.business=v; if(ac) ac.business=v; } save(); toast(t('o_savedDetails')); return; }
   if(k==='setVoice') s.voiceURI=el.value;
   if(k==='setAi'){ s.ai=el.checked; save(); render(); ensureTr(); return; }
   if(k==='setTrain'){ const ac=acct(); if(ac){ ac.train=el.checked; save(); ui.keep=true; render(); } return; }
   if(k==='rsReason'){ ui.rs={reason:el.value}; reportSheet(); return; }
-  if(k==='setName'){ const ac=acct(); if(ac&&el.value.trim()) ac.name=el.value.trim(); }
-  if(k==='setBiz'){ const ac=acct(); if(ac&&el.value.trim()) ac.business=el.value.trim(); }
   if(k==='stampState'&&d) d.stamp.state=el.value;
-  if(k==='stampCert'&&d){ d.stamp.cert=el.value.trim(); d.stamp.status=d.stamp.cert?'paid':'not_paid'; save(); ui.keep=true; render(); return; }
+  if((k==='stampCert'||k==='stampState')&&!canEditDeal(d)) return;
+  if(k==='stampCert'&&d){ const cv=clean(el.value).toUpperCase().replace(/\s/g,''); if(!showErrs([[el,V.stampCert(cv)]],{focus:false})) return; d.stamp.cert=cv; d.stamp.status=d.stamp.cert?'paid':'not_paid'; save(); ui.keep=true; render(); return; }
   if(ui.inp&&(k==='asrLang'||k==='asrModel')){ syncInp(); const x=ui.inp; x[k]=el.value; if(x.asr&&['prep','load','run'].includes(x.asr.state)){ addEvidenceSheet(); return; } x.asr=null; if(x.file) transcribe(x); else addEvidenceSheet(); return; }
   if(ui.inp&&['consent','speaker','srcTime','party'].includes(k)){ syncInp(); if(k==='party') ui.inp.party=el.checked; else ui.inp[k]=el.value; addEvidenceSheet(); return; }
   save();

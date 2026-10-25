@@ -81,6 +81,40 @@ Supabase's built-in email sender allows only a few login emails per hour. For re
 
 Until `config.js` has keys, DraftIt still runs, but data stays in the browser of each device.
 
+## Sign-in, permissions and input checks
+
+**Signing in.** Online accounts log in with a one-time code sent by email (Supabase Auth). Without Supabase, the app runs in demo mode: no SMS is sent, so the screen shows a random 6-digit code that must be typed back. In both modes, 5 wrong codes lock that email or number for 10 minutes, and a new code can be asked for only every 30 seconds. A mobile number can belong to only one account.
+
+**Who can do what.** Every button goes through one permission check before it runs:
+
+| Account | Can open | Can change |
+| --- | --- | --- |
+| User | home, calendar, versions, lawyer check, settings, their own deals and chat rooms | only their own deals |
+| Lawyer | home, approvals, earnings, settings, and only the deals sent to them | only the review: approve or send notes |
+| Guest (joined by chat code) | that one chat room | messages in that room |
+
+Opening a deal that is not yours, or a page your account type does not have, is refused, even if someone edits the page in the browser. Online, the same rules are enforced again by the database (row-level security), so changing the app cannot reach another account's data. Slow actions (saving, signing, locking) cannot run twice from a double tap. Signing for the other side on the same phone requires them to type their full name, and a person cannot sign the same version twice.
+
+**Input checks.** Every field is checked before anything is saved, with the reason shown under the field:
+
+| Field | Rule |
+| --- | --- |
+| Names | letters in any Indian script, spaces, `. ' -`; 2 to 60 characters; no digits or symbols |
+| Business | 2 to 80 characters, at least 2 letters; `& . , ' ( ) / -` allowed |
+| Email | standard address format, up to 254 characters |
+| Mobile | 10 digits starting with 6, 7, 8 or 9; not one digit repeated |
+| Enrolment number | Bar Council format such as `KAR/1234/2016`; year not in the future |
+| GSTIN | 15 characters in the official pattern, with the check digit verified; both sides cannot share one |
+| Udyam | `UDYAM-XX-00-0000000` |
+| Aadhaar | 12 digits with the Verhoeff check digit verified, or a 16-digit Virtual ID; only the last 4 digits are kept |
+| e-Stamp certificate | `IN-` + state code + 8 to 20 letters or digits |
+| Quotation | number up to 30 characters; 1 to 365 days; HSN 4, 6 or 8 digits; whole quantity; rate above ₹0 with at most 2 decimals |
+| Dates | notary visit from today to 90 days ahead; a message time cannot be in the future |
+| Text | clause edits 5 to 1500 characters, lawyer notes 5 to 2000, chat messages up to 1000, pasted chats up to 2,00,000 |
+| Files | type checked by name and kind (no programs); photos up to 15 MB, voice up to 50 MB, PDFs up to 20 MB, chat exports up to 5 MB, logos up to 2 MB |
+
+Everything typed is shown as plain text, never run as code. The database repeats the key checks (deal and evidence ids, SHA-256 fingerprints, evidence types, signature parties, sizes), so bad data is refused even through the API. The `claude` Edge Function accepts only signed-in accounts, at most 30 calls a minute each, and only the two allowed models.
+
 ## Host your own copy
 
 The app is a single static page, so any static host works.
