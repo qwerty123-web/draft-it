@@ -194,7 +194,8 @@ function newDealObj(id,title,created,parties,owner){ return {id,title,created,pa
 
 async function seedState(){
   let lang=S&&S.settings?S.settings.lang:''; if(!lang){ try{ lang=localStorage.getItem('draftit.lang')||''; }catch(e){} } lang=LI[lang]!=null?lang:'en';
-  S={v:5,counter:1300,settings:{lang,rate:0.95,voiceURI:'',ai:true,userName:'',business:'',userId:''},tr:{hi:{},mr:{},te:{},ta:{},kn:{}},deals:[],accounts:{},session:null,notary:[]};
+  let ts='m'; try{ ts=localStorage.getItem('draftit.ts')||'m'; }catch(e){}
+  S={v:5,counter:1300,settings:{textSize:ts,lang,rate:0.95,voiceURI:'',ai:true,userName:'',business:'',userId:''},tr:{hi:{},mr:{},te:{},ta:{},kn:{}},deals:[],accounts:{},session:null,notary:[]};
   const RAVI='u_ravi_4821', at0='2026-10-01T10:00:00'+TZ; Object.assign(S.settings,{userName:'Ravi Kumar',business:'Kumar Print & Pack',userId:RAVI});
   S.accounts[RAVI]={id:RAVI,name:'Ravi Kumar',mobile:'9876543210',role:'seller',business:'Kumar Print & Pack',train:false,tutDone:false,created:at0};
   LAWYERS.forEach(l=>{ S.accounts[l.acct]={id:l.acct,name:l.name,mobile:l.mobile,role:'lawyer',business:'',lawyerId:l.id,enrol:l.enrol,bar:{l1:'Karnataka',l2:'Maharashtra',l3:'Tamil Nadu'}[l.id],fee:l.fee,train:false,tutDone:false,created:at0}; });
@@ -456,7 +457,7 @@ const REC_ICON={whatsapp:'chat',paste:'paste',voice:'mic',pdf:'file',photo:'cam'
 function render(){
   const app=$('#app');
   if(!S){ app.innerHTML=`<div class="splash"><div class="brand">${ic('shield',30)}Draft It</div><div class="spin"></div></div>`; return; }
-  document.documentElement.lang=S.settings.lang; stopRead();
+  document.documentElement.lang=S.settings.lang; applyTextSize(); stopRead();
   if(!acct()&&ui.view!=='auth'&&ui.view!=='data'&&!(ui.view==='room'&&ui.guest)){ ui.view='auth'; }
   const y=window.scrollY;
   if(ui.view==='auth'){ app.innerHTML=renderAuth(); return; }
@@ -474,11 +475,14 @@ function trBar(){
   if(ui.tr.failed) return `<div class="trbar gut row between"><span>${esc(t('trFail'))}</span><button class="link" data-act="retryTr">${esc(t('tryAgain'))}</button></div>`;
   return '';
 }
+function applyTextSize(){ const z=(S&&S.settings.textSize)||(()=>{ try{ return localStorage.getItem('draftit.ts'); }catch(e){ return ''; } })()||'m'; const h=document.documentElement; h.classList.toggle('ts-l',z==='l'); h.classList.toggle('ts-xl',z==='xl'); }
+const textSizeSeg=()=>{ const z=S.settings.textSize||'m'; return `<div class="stack-s"><b>${esc(t('textSize'))}</b><div class="seg ts-seg" role="group" aria-label="${esc(t('textSize'))}">${[['m','tsM'],['l','tsL'],['xl','tsXL']].map(([k,l])=>`<button aria-pressed="${z===k}" data-act="setTextSize" data-v="${k}">${esc(t(l))}</button>`).join('')}</div></div>`; };
 function renderTop(){
-  const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('appLang'))}">${esc(langOf(S.settings.lang).n)}</button>`;
+  const SHORT={en:'EN',hi:'हिं',mr:'मरा',te:'తె',ta:'த',kn:'ಕ'}, compact=ui.view==='deal'||ui.view==='room';
+  const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('langAndSize'))}">${esc(compact?SHORT[S.settings.lang]:langOf(S.settings.lang).n)}</button>`;
   const gear=`<button class="ibtn" data-act="go" data-v="settings" aria-label="${esc(t('settings'))}">${ic('gear')}</button>`;
   const back=v=>`<button class="ibtn" data-act="go" data-v="${v}" aria-label="${esc(t('back'))}">${ic('back')}</button>`;
-  if(ui.view==='deal'){ const d=deal(), cp=d.parties[1], rp=isLawyer()&&ui.demoBack?`<button class="link on-navy" data-act="demoBack">${esc(t('backToUser',{name:first(S.accounts[ui.demoBack].name)}))}</button>`:!isLawyer()&&!d.guest?`<button class="report-pill ${d.report?'on':''}" data-act="reportSheet">${ic('flag',14)}<span>${esc(t(d.report?'reportedTag':'reportShort'))}</span></button>`:''; return `<header class="top gut">${back('home')}<div class="grow" style="min-width:0"><div class="top-title">${esc(tx(d.title))}</div><div class="top-sub">${esc(cp.org)} · ${esc(cp.name)}</div></div>${rp}${lc}</header>`; }
+  if(ui.view==='deal'){ const d=deal(), cp=d.parties[1], rp=isLawyer()&&ui.demoBack?`<button class="link on-navy" data-act="demoBack">${esc(t('backToUser',{name:first(S.accounts[ui.demoBack].name)}))}</button>`:!isLawyer()&&!d.guest?`<button class="report-pill ${d.report?'on':''}" data-act="reportSheet" aria-label="${esc(t('reportScam'))}">${ic('flag',14)}<span>${esc(t(d.report?'reportedTag':'reportShort'))}</span></button>`:''; return `<header class="top gut">${back('home')}<div class="grow" style="min-width:0"><div class="top-title">${esc(tx(d.title))}</div><div class="top-sub">${esc(cp.org)} · ${esc(cp.name)}</div></div>${rp}${lc}</header>`; }
   if(ui.view==='room'){ const d=deal(ui.roomDeal); return `<header class="top gut">${d&&!d.guest?`<button class="ibtn" data-act="openDeal" data-id="${d.id}" aria-label="${esc(t('back'))}">${ic('back')}</button>`:back('home')}<div class="grow" style="min-width:0"><div class="top-title">${esc(t('chatRoom'))}</div><div class="top-sub">${esc(d?tx(d.title):'')}</div></div>${lc}</header>`; }
   if(ui.view==='settings') return `<header class="top gut">${back('home')}<div class="grow top-title">${esc(t('settings'))}</div></header>`;
   if(ui.view==='data') return `<header class="top gut">${back(acct()?'settings':'auth')}<div class="grow top-title">${esc(t('yourData'))}</div>${lc}</header>`;
@@ -493,7 +497,7 @@ function renderNav(){
 function renderView(){ const L=isLawyer(); switch(ui.view){ case 'deal': return renderDeal(); case 'calendar': return renderCalendar(); case 'revisions': return L?renderApproved():renderRevisions(); case 'lawyer': return renderLawyer(); case 'settings': return renderSettings(); case 'data': return renderData(); case 'room': return renderRoom(); case 'earnings': return renderEarnings(); default: return L?renderLawyerHome():renderHome(); } }
 
 /* ---------- home ---------- */
-function renderBand(){ return `<section class="band gut"><p class="hi">${esc(t('hello',{name:first(S.settings.userName)}))}</p><h1>${esc(t('needReply',{n:openFlags()}))}</h1><p class="sub">${esc(t('needReplySub'))}</p><p class="quip">${ic('spark',15)} ${esc(t('quip'+ui.quip))}</p></section>`; }
+function renderBand(){ return `<section class="band gut"><p class="hi">${esc(t('hello',{name:first(S.settings.userName)}))}</p><h1>${esc(t('needReply',{n:openFlags()}))}</h1><p class="sub">${esc(t('needReplySub'))}</p></section>`; }
 function renderHome(){
   const nx=allEvents().filter(e=>e.status!=='done'&&dayDiff(e.date)>=0)[0];
   let h='';
@@ -693,7 +697,7 @@ function renderSettings(){
   const a=acct();
   return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':a.role==='buyer'?'buyer':'seller'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="logout">${esc(t('logOut'))}</button><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div></section>
   <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
-  <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p></section>
+  <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}</section>
   <section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
   <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
   ${STANDALONE&&!isInstalled()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
@@ -778,7 +782,7 @@ function lawyerSheet(){
   else h+=`<p class="tiny">${esc(t('demoPanel'))}</p>`;
   openSheet(h);
 }
-function langSheet(){ openSheet(sheetHead(t('appLang'))+`<div class="langs">${LANGS.map(l=>`<button aria-pressed="${S.settings.lang===l.c}" data-act="setLang" data-v="${l.c}" data-close="1">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>`); }
+function langSheet(){ openSheet(sheetHead(t('langAndSize'))+`<div class="langs">${LANGS.map(l=>`<button aria-pressed="${S.settings.lang===l.c}" data-act="setLang" data-v="${l.c}" data-close="1">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}`); }
 function newDealSheet(){ openSheet(sheetHead(t('newDeal'))+`<label class="field">${esc(t('dealAbout'))}<input class="inp" id="ndTitle"></label><label class="field">${esc(t('otherName'))}<input class="inp" id="ndName"></label><label class="field">${esc(t('theirBiz'))}<input class="inp" id="ndOrg"></label><div class="stack-s"><span class="lbl">${esc(t('youAre'))}</span><div class="seg" id="ndRole"><button aria-pressed="${acct().role!=='buyer'}" data-act="ndRole" data-v="Seller">${esc(t('seller'))}</button><button aria-pressed="${acct().role==='buyer'}" data-act="ndRole" data-v="Buyer">${esc(t('buyer'))}</button></div></div><button class="btn" data-act="createDeal">${esc(t('createAndAdd'))}</button><button class="link" data-act="ndSample">${ic('spark',14)} ${esc(t('fillSample'))}</button>`); }
 /* sample data so nobody has to type a chat to try the app */
 function ddmmyy(dt){ return `${p2(dt.getUTCDate())}/${p2(dt.getUTCMonth()+1)}/${String(dt.getUTCFullYear()).slice(2)}`; }
@@ -1066,7 +1070,7 @@ let SB=null; const cloud={uid:null,email:'',state:'saved',updatedAt:null,timer:n
 function initCloud(){ if(!STANDALONE||!CFG.supabaseUrl||!CFG.supabaseAnonKey||!window.supabase||typeof window.supabase.createClient!=='function') return; try{ SB=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }catch(e){ SB=null; } }
 function cloudPayload(){ const uid=cloud.uid, deals=S.deals.filter(d=>d.owner===uid), strs=contentStrings(deals), tr={};
   ['hi','mr','te','ta','kn'].forEach(lg=>{ const m=S.tr[lg]||{}, o={}; strs.forEach(x=>{ if(m[x]) o[x]=m[x]; }); tr[lg]=o; });
-  return {v:1,account:S.accounts[uid],deals,notary:(S.notary||[]).filter(n=>n.by===uid),settings:{lang:S.settings.lang,rate:S.settings.rate,voiceURI:S.settings.voiceURI,ai:S.settings.ai},counter:S.counter,tr}; }
+  return {v:1,account:S.accounts[uid],deals,notary:(S.notary||[]).filter(n=>n.by===uid),settings:{lang:S.settings.lang,rate:S.settings.rate,voiceURI:S.settings.voiceURI,ai:S.settings.ai,textSize:S.settings.textSize||'m'},counter:S.counter,tr}; }
 function setCloudState(st){ cloud.state=st; const el=document.getElementById('cloudState'); if(el) el.outerHTML=cloudBadge(); }
 const cloudBadge=()=>!cloud.uid?'':`<span id="cloudState" class="cloud-badge ${cloud.state}">${ic(cloud.state==='error'?'excl':cloud.state==='saving'?'spark':'check',13)} ${esc(t(cloud.state==='saving'?'savingOnline':cloud.state==='error'?'saveFailed':'savedOnline'))}</span>`;
 function scheduleCloudSave(){ cloud.dirty=true; clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudSaveNow,1200); if(cloud.state!=='saving') setCloudState('saving'); }
@@ -1178,9 +1182,9 @@ function guestRoom(id){ const g=newDealObj(id,t('chatRoom'),nowISO(),[{id:'me',n
 /* ---------- sign up and log in ---------- */
 function renderAuth(){
   const A=ui.auth||(ui.auth={mode:'signup',step:'form',role:'seller',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''});
-  const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('appLang'))}">${esc(langOf(S.settings.lang).n)}</button>`;
+  const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('langAndSize'))}">${esc(langOf(S.settings.lang).n)}</button>`;
   const f=(k,l,o)=>`<label class="field">${esc(t(l))}<input class="inp" data-auth="${k}" value="${esc(A[k])}" ${o||''}></label>`;
-  let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}Draft It</div>${lc}</header><section class="band gut"><h1>${esc(t('welcomeTag'))}</h1><p class="quip">${ic('spark',15)} ${esc(t('quip'+ui.quip))}</p></section><main class="gut stack" style="padding-bottom:40px">`;
+  let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}Draft It</div>${lc}</header><section class="band gut"><h1>${esc(t('welcomeTag'))}</h1></section><main class="gut stack" style="padding-bottom:40px">`;
   h+=`<div class="seg">${['signup','login','join'].map(m=>`<button aria-pressed="${A.mode===m}" data-act="authMode" data-v="${m}">${esc(t(m==='signup'?'signUp':m==='login'?'logIn':'joinChat'))}</button>`).join('')}</div><section class="card pad stack">`;
   if(A.mode==='join') h+=`<p class="small muted">${esc(t('joinIntro'))}</p><label class="field">${esc(t('roomCodeLbl'))}<input class="inp mono" data-auth="code" value="${esc(A.code||'')}" autocapitalize="characters" placeholder="D05"></label><label class="field">${esc(t('yourName'))}<input class="inp" data-auth="gname" value="${esc(A.gname||'')}"></label><button class="btn full" data-act="authJoin">${ic('chat',18)} ${esc(t('joinChat'))}</button>`;
   else if(SB&&A.step==='otp') h+=`<p class="small">${esc(t('codeSentTo',{email:A.email}))}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="10" autocomplete="one-time-code" aria-label="${esc(t('enterCode'))}"><p class="tiny">${esc(t('otpEmailHint'))}</p><button class="btn full" data-act="authVerify" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('verifyOtp'))}</button><div class="row between"><button class="link" data-act="authBack">${esc(t('back'))}</button><button class="link" data-act="authOtp">${esc(t('resendCode'))}</button></div>`;
@@ -1513,6 +1517,7 @@ document.addEventListener('click',async e=>{
     case 'fillSample': syncInp(); await fillSample(); break;
     case 'ndSample': { closeSheet(); const nd=cloneTemplate(0,S.session); ui.dealId=nd.id; ui.view='deal'; ui.tab='terms'; window.scrollTo(0,0); render(); toast(t('o_sampleAdded')); break; }
     case 'readEl': readEl(a); break;
+    case 'setTextSize': S.settings.textSize=a.dataset.v; try{ localStorage.setItem('draftit.ts',a.dataset.v); }catch(err){} save(); applyTextSize(); if(!$('#sheetWrap').hidden) langSheet(); else { ui.keep=true; render(); } break;
     case 'apiSave': { const k=(($('#apiKey')||{}).value||'').trim(); if(!k) break; const smp=makeApiSample(k); try{ await smp('Reply with the single word OK.',{modelTier:'quick'}); }catch(err){ return toast(t('apiBad')); } try{ localStorage.setItem('draftit.key',k); }catch(err){} SAMPLE=smp; S.settings.ai=true; save(); ui.keep=true; render(); toast(t('apiSaved')); ensureTr(); break; }
     case 'apiRemove': try{ localStorage.removeItem('draftit.key'); }catch(err){} SAMPLE=null; ui.keep=true; render(); toast(t('apiRemoved')); break;
     case 'installApp': if(INSTALL){ INSTALL.prompt(); try{ await INSTALL.userChoice; }catch(err){} INSTALL=null; ui.keep=true; render(); } break;

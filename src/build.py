@@ -1,7 +1,7 @@
 import os, shutil, hashlib, json
 B='/home/claude/pakka2/'
 OUT='/home/claude/draft-it/'
-FONTS='<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap">\n'
+FONTS='<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap">\n'
 css=open(B+'style.css').read()
 SRC=['i18n.js','i18n2.js','i18n3.js','i18n4.js','i18n5.js','i18n6.js','seed_tr.js','audio.js','app.js']
 js=''.join(open(B+f).read()+'\n' for f in SRC)
@@ -21,7 +21,7 @@ page=f'''<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Draft It: WhatsApp deals to signed agreements</title>
 <meta name="description" content="Turn WhatsApp deals, voice notes and bills into clear, signed agreements that hold up in India. Six languages.">
-<meta name="theme-color" content="#0B2E63">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -45,7 +45,7 @@ if(window.caches) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(
 '''
 os.makedirs(OUT,exist_ok=True)
 open(OUT+'index.html','w').write(page)
-manifest={"name":"Draft It","short_name":"Draft It","description":"Turn WhatsApp deals into clear, signed agreements.","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#0B2E63","theme_color":"#0B2E63","lang":"en-IN","categories":["business","productivity"],
+manifest={"name":"Draft It","short_name":"Draft It","description":"Turn WhatsApp deals into clear, signed agreements.","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#000000","theme_color":"#000000","lang":"en-IN","categories":["business","productivity"],
  "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icons/maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
 open(OUT+'manifest.webmanifest','w').write(json.dumps(manifest,indent=2))
 if os.path.exists(OUT+'sw.js'): os.remove(OUT+'sw.js')
