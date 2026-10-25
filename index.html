@@ -3001,7 +3001,7 @@ self.onmessage=async e=>{ const {id,audio,model,language}=e.data;
 };`;
   const w=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})),{type:'module'});
   w.onmessage=e=>{ const m=e.data, j=ASR.jobs[m.id]; if(j) j(m); };
-  w.onerror=e=>{ Object.values(ASR.jobs).forEach(j=>j({type:'error',message:(e&&e.message)||'worker failed'})); ASR.worker=null; };
+  w.onerror=e=>{ Object.values(ASR.jobs).forEach(j=>j({type:'error',message:'load failed '+((e&&e.message)||'')})); ASR.worker=null; };
   return (ASR.worker=w);
 }
 /* decode any audio (or the sound track of an MP4) to 16 kHz mono, which is what Whisper expects */
