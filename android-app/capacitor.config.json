@@ -1,0 +1,12 @@
+{
+  "appId": "in.draftit.app",
+  "appName": "DraftIt",
+  "webDir": "www",
+  "server": {
+    "url": "https://qwerty123-web.github.io/draft-it/",
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#0B2E63"
+  }
+}

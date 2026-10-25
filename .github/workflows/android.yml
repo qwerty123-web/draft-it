@@ -1,0 +1,63 @@
+name: Android app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android-app/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Capacitor
+        working-directory: android-app
+        run: npm install --no-audit --no-fund
+
+      - name: Create the Android project
+        working-directory: android-app
+        run: |
+          npx cap add android
+          cp -r res/* android/app/src/main/res/
+          npx cap sync android
+
+      - name: Build the APK
+        working-directory: android-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Name the APK
+        run: cp android-app/android/app/build/outputs/apk/debug/app-debug.apk DraftIt.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DraftIt-apk
+          path: DraftIt.apk
+
+      - name: Publish to the android-latest release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: DraftIt Android app
+          body: |
+            Install on Android: download DraftIt.apk on your phone, open it, and allow installing from your browser when asked.
+            The app opens the live DraftIt site, so it always has the latest features.
+          files: DraftIt.apk
+          make_latest: true
