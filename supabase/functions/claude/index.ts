@@ -1,7 +1,8 @@
 // DraftIt: Claude for signed-in users, without putting an API key in the browser.
 // Deploy: Supabase dashboard > Edge Functions > Deploy a new function > Via editor,
 // name it "claude", paste this file, Deploy. Then Edge Functions > Secrets > add
-// ANTHROPIC_API_KEY with your key from console.anthropic.com.
+// ANTHROPIC_API_KEY with your key from platform.claude.com/settings/keys (create it inside a
+// workspace; otherwise also add ANTHROPIC_WORKSPACE_ID with that workspace's ID).
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,7 +36,13 @@ Deno.serve(async (req) => {
 
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    headers: {
+      "content-type": "application/json",
+      "authorization": `Bearer ${key}`,
+      "anthropic-version": "2023-06-01",
+      // Only needed for a key that is not scoped to a workspace (optional secret).
+      ...(Deno.env.get("ANTHROPIC_WORKSPACE_ID") ? { "anthropic-workspace-id": Deno.env.get("ANTHROPIC_WORKSPACE_ID")! } : {}),
+    },
     body: JSON.stringify({ model: MODELS[body.tier ?? "default"] ?? MODELS.default, max_tokens: 8000, messages: body.messages }),
   });
   return new Response(await r.text(), { status: r.status, headers: { ...CORS, "content-type": "application/json" } });

@@ -73,7 +73,7 @@ Everything a signed-in account does is stored in [Supabase](https://supabase.com
 4. **Set the site address.** **Authentication → URL Configuration → Site URL**: `https://qwerty123-web.github.io/draft-it/`.
 5. **Turn on Claude for everyone (no key in the browser).**
    - **Edge Functions → Deploy a new function → Via editor**, name it `claude`, paste [`supabase/functions/claude/index.ts`](supabase/functions/claude/index.ts), click **Deploy**.
-   - **Edge Functions → Secrets → Add new secret**: name `ANTHROPIC_API_KEY`, value your key from console.anthropic.com.
+   - **Edge Functions → Secrets → Add new secret**: name `ANTHROPIC_API_KEY`, value your key from [platform.claude.com/settings/keys](https://platform.claude.com/settings/keys) (choose a workspace when you create it; if you don't, also add `ANTHROPIC_WORKSPACE_ID`). The account needs prepaid credits under Settings → Billing.
    - Signed-in users now get chat reading, translation, photo reading and comparison automatically. Usage is billed to that key.
 6. **Copy two keys into `config.js`** (Project Settings → API: **Project URL** and **anon public** key). Never put the **service_role** key in this file.
 
