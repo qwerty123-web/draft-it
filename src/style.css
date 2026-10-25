@@ -459,6 +459,8 @@ label.btn{cursor:pointer}
 .danger-link{color:var(--red)!important}
 .snip-card{display:flex;align-items:center;gap:.875rem;padding:1rem 1.125rem;width:100%;text-align:left;flex-wrap:wrap}
 .snip-card .grow{flex:1 1 12rem;min-width:0}
+.filepick{display:flex;flex-wrap:wrap;align-items:center;gap:.625rem .875rem}
+.filepick .chip{max-width:100%;overflow-wrap:anywhere}
 .snip-card.on{background:var(--navy-t);border-color:transparent;flex-wrap:nowrap}
 .crop-wrap{position:fixed;inset:0;z-index:90;background:#071733;color:#FFFFFF;display:flex;flex-direction:column}
 .crop-bar{display:flex;gap:.5rem;align-items:center;padding:.625rem 1rem;background:var(--brand);flex-wrap:wrap}
@@ -509,6 +511,7 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
   html:not(.lay-phone) .home-main{grid-column:1;grid-row:1}
   html:not(.lay-phone) .home-side{grid-column:2;grid-row:1;position:sticky;top:5rem}
   html:not(.lay-phone) .home-side .desk{display:flex}
+  html:not(.lay-phone) .home-side .snip-card{display:none}
   html:not(.lay-phone) .deals{display:grid;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr));gap:.875rem;border:0;background:transparent}
   html:not(.lay-phone) .deals>li{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex}
   html:not(.lay-phone) .deals>li+li{border-top:1px solid var(--line)}

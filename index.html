@@ -476,6 +476,8 @@ label.btn{cursor:pointer}
 .danger-link{color:var(--red)!important}
 .snip-card{display:flex;align-items:center;gap:.875rem;padding:1rem 1.125rem;width:100%;text-align:left;flex-wrap:wrap}
 .snip-card .grow{flex:1 1 12rem;min-width:0}
+.filepick{display:flex;flex-wrap:wrap;align-items:center;gap:.625rem .875rem}
+.filepick .chip{max-width:100%;overflow-wrap:anywhere}
 .snip-card.on{background:var(--navy-t);border-color:transparent;flex-wrap:nowrap}
 .crop-wrap{position:fixed;inset:0;z-index:90;background:#071733;color:#FFFFFF;display:flex;flex-direction:column}
 .crop-bar{display:flex;gap:.5rem;align-items:center;padding:.625rem 1rem;background:var(--brand);flex-wrap:wrap}
@@ -526,6 +528,7 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
   html:not(.lay-phone) .home-main{grid-column:1;grid-row:1}
   html:not(.lay-phone) .home-side{grid-column:2;grid-row:1;position:sticky;top:5rem}
   html:not(.lay-phone) .home-side .desk{display:flex}
+  html:not(.lay-phone) .home-side .snip-card{display:none}
   html:not(.lay-phone) .deals{display:grid;grid-template-columns:repeat(auto-fill,minmax(19rem,1fr));gap:.875rem;border:0;background:transparent}
   html:not(.lay-phone) .deals>li{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex}
   html:not(.lay-phone) .deals>li+li{border-top:1px solid var(--line)}
@@ -1393,6 +1396,9 @@ langAndSize:["Language and text size","भाषा और अक्षरों
 });
 
 Object.assign(I18N,{
+changeFile:["Change file","फ़ाइल बदलें","फाइल बदला","ఫైల్ మార్చండి","கோப்பை மாற்று","ಫೈಲ್ ಬದಲಿಸಿ"],
+noFileYet:["No file chosen yet","अभी कोई फ़ाइल नहीं चुनी","अजून फाइल निवडलेली नाही","ఇంకా ఫైల్ ఎంచుకోలేదు","இன்னும் கோப்பு தேர்ந்தெடுக்கவில்லை","ಇನ್ನೂ ಫೈಲ್ ಆರಿಸಿಲ್ಲ"],
+audioTypes:["MP3, M4A, OPUS, WAV, AAC, or an MP4 or 3GP video of the call.","MP3, M4A, OPUS, WAV, AAC, या कॉल का MP4 या 3GP वीडियो।","MP3, M4A, OPUS, WAV, AAC, किंवा कॉलचा MP4 किंवा 3GP व्हिडिओ.","MP3, M4A, OPUS, WAV, AAC, లేదా కాల్ యొక్క MP4 లేదా 3GP వీడియో.","MP3, M4A, OPUS, WAV, AAC, அல்லது அழைப்பின் MP4 அல்லது 3GP வீடியோ.","MP3, M4A, OPUS, WAV, AAC, ಅಥವಾ ಕರೆಯ MP4 ಅಥವಾ 3GP ವಿಡಿಯೋ."],
 installB:["Install it on your phone or laptop and open it like any other app.","इसे फ़ोन या लैपटॉप पर इंस्टॉल करें और किसी भी ऐप की तरह खोलें।","हे फोन किंवा लॅपटॉपवर इन्स्टॉल करा आणि इतर ॲपसारखे उघडा.","దీన్ని ఫోన్ లేదా ల్యాప్‌టాప్‌లో ఇన్‌స్టాల్ చేసి, ఇతర యాప్‌లాగే తెరవండి.","இதை போன் அல்லது மடிக்கணினியில் நிறுவி, மற்ற செயலிகளைப் போலவே திறக்கவும்.","ಇದನ್ನು ಫೋನ್ ಅಥವಾ ಲ್ಯಾಪ್‌ಟಾಪ್‌ನಲ್ಲಿ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ, ಇತರ ಆ್ಯಪ್‌ಗಳಂತೆ ತೆರೆಯಿರಿ."],
 k_deadline:["Deadline","आखिरी तारीख","शेवटची तारीख","గడువు","கடைசி நாள்","ಕೊನೆಯ ದಿನ"],
 roomLocal:["Not live yet. Your messages are saved in this deal.","अभी लाइव नहीं है। आपके मैसेज इस डील में सेव हैं।","अजून लाइव्ह नाही. तुमचे संदेश या व्यवहारात सेव्ह आहेत.","ఇంకా లైవ్ కాలేదు. మీ మెసేజ్‌లు ఈ డీల్‌లో సేవ్ అయ్యాయి.","இன்னும் நேரலையில் இல்லை. உங்கள் செய்திகள் இந்த ஒப்பந்தத்தில் சேமிக்கப்பட்டுள்ளன.","ಇನ್ನೂ ಲೈವ್ ಆಗಿಲ್ಲ. ನಿಮ್ಮ ಸಂದೇಶಗಳು ಈ ಡೀಲ್‌ನಲ್ಲಿ ಉಳಿದಿವೆ."],
@@ -2941,16 +2947,19 @@ function endTutorial(){ stopSpeak(true); const a=acct(); if(a){ a.tutDone=true; 
 /* ---------- add evidence ---------- */
 const SRC=[['paste','paste'],['whatsapp','chat'],['voice','mic'],['pdf','file'],['photo','cam']];
 const blankInp=type=>({type,text:'',consent:'',party:false,speaker:'cp',srcTime:'',fileName:'',fileHash:'',status:''});
+/* file chooser that keeps showing the chosen file after the sheet redraws */
+function filePick(kind,accept,hint){ const x=ui.inp||{}, has=x.fileName&&x.fileKind===kind;
+  return `<div class="filepick"><label class="btn sec">${ic('upload',18)} ${esc(t(has?'changeFile':'chooseFile'))}<input type="file" hidden accept="${accept}" data-file="${kind}"></label>${has?`<span class="chip c-ok">${ic('check',14)} ${esc(x.fileName)}</span>`:`<span class="tiny">${esc(t('noFileYet'))}</span>`}</div>${hint?`<p class="tiny">${esc(hint)}</p>`:''}`; }
 function addEvidenceSheet(){
   if(!ui.inp) ui.inp=blankInp('paste'); const d=deal(), x=ui.inp;
   const who=k=>`<label class="field">${esc(t(k))}<select class="sel" data-change="speaker">${d.parties.map(p=>`<option value="${p.id}" ${x.speaker===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}${k==='whoSpeaking'?`<option value="both" ${x.speaker==='both'?'selected':''}>${esc(t('bothCall'))}</option>`:''}</select></label>`;
   let h=sheetHead(t('addEvidence'),esc(tx(d.title)))+`<div class="src-grid">${SRC.map(([k,i])=>`<button class="src" aria-pressed="${x.type===k}" data-act="srcType" data-v="${k}">${ic(i,20)}<span>${esc(t('src_'+k))}</span><span class="tiny">${esc(t('srcSub_'+k))}</span></button>`).join('')}</div>`;
   h+=`<div class="sample-bar"><span class="tiny">${esc(t('sampleHint'))}</span><button class="btn sec sm" data-act="fillSample">${ic('spark',16)} ${esc(t('fillSample'))}</button></div>`;
   if(x.type==='paste') h+=`<label class="field">${esc(t('pasteLabel'))}<textarea class="inp" id="inpText" data-input="text" placeholder="18/10/26, 10:02 am - Anjali: …">${esc(x.text)}</textarea></label>`;
-  if(x.type==='whatsapp') h+=`<label class="field">${esc(t('chooseFile'))}<input class="inp" type="file" accept=".txt,text/plain" data-file="txt"></label><p class="tiny">${esc(t('exportHint'))}</p>`;
-  if(x.type==='voice') h+=`<label class="field">${esc(t('chooseFile'))}<input class="inp" type="file" accept="audio/*,.opus,.ogg,.m4a,.mp3,.aac,.wav" data-file="audio"></label>${x.audioURL?`<audio controls src="${esc(x.audioURL)}" style="width:100%"></audio>`:''}<div class="stack-s"><span class="lbl">${esc(t('howRecorded'))}</span>${['sent_by_them','call_both_knew','own_note','secret'].map(k=>`<label class="radio ${x.consent===k?'on':''}"><input type="radio" name="consent" value="${k}" ${x.consent===k?'checked':''} data-change="consent"><span>${esc(t('c_'+k))}</span></label>`).join('')}${x.consent==='secret'?`<div class="note bad">${esc(t('secretWarn'))}</div>`:''}<label class="check"><input type="checkbox" ${x.party?'checked':''} data-change="party"><span>${esc(t('partOf'))}</span></label></div>${who('whoSpeaking')}<label class="field">${esc(t('whenSent'))}<input class="inp" type="datetime-local" data-change="srcTime" value="${esc(x.srcTime)}"></label><label class="field">${esc(t('transcript'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label><p class="tiny">${esc(t('transcriptHint'))}</p>`;
-  if(x.type==='pdf') h+=`<label class="field">${esc(t('chooseFile'))}<input class="inp" type="file" accept="application/pdf,.pdf" data-file="pdf"></label>${x.fileHash?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
-  if(x.type==='photo') h+=`<label class="field">${esc(t('chooseFile'))}<input class="inp" type="file" accept="image/*" data-file="image"></label>${x.thumb?`<img class="thumb" src="${esc(x.thumb)}" alt="">`:''}${x.thumb&&SAMPLE?`<button class="btn sec sm" data-act="ocr">${esc(t('readPhoto'))}</button>`:''}${x.thumb||x.text?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
+  if(x.type==='whatsapp') h+=`${filePick('txt','.txt,text/plain')}<p class="tiny">${esc(t('exportHint'))}</p>`;
+  if(x.type==='voice') h+=`${filePick('audio','audio/*,video/mp4,video/3gpp,video/webm,.mp4,.m4a,.opus,.ogg,.mp3,.aac,.wav,.amr,.3gp,.webm',t('audioTypes'))}${x.audioURL?`<audio controls src="${esc(x.audioURL)}" style="width:100%"></audio>`:''}<div class="stack-s"><span class="lbl">${esc(t('howRecorded'))}</span>${['sent_by_them','call_both_knew','own_note','secret'].map(k=>`<label class="radio ${x.consent===k?'on':''}"><input type="radio" name="consent" value="${k}" ${x.consent===k?'checked':''} data-change="consent"><span>${esc(t('c_'+k))}</span></label>`).join('')}${x.consent==='secret'?`<div class="note bad">${esc(t('secretWarn'))}</div>`:''}<label class="check"><input type="checkbox" ${x.party?'checked':''} data-change="party"><span>${esc(t('partOf'))}</span></label></div>${who('whoSpeaking')}<label class="field">${esc(t('whenSent'))}<input class="inp" type="datetime-local" data-change="srcTime" value="${esc(x.srcTime)}"></label><label class="field">${esc(t('transcript'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label><p class="tiny">${esc(t('transcriptHint'))}</p>`;
+  if(x.type==='pdf') h+=`${filePick('pdf','application/pdf,.pdf')}${x.fileHash?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
+  if(x.type==='photo') h+=`${filePick('image','image/*')}${x.thumb?`<img class="thumb" src="${esc(x.thumb)}" alt="">`:''}${x.thumb&&SAMPLE?`<button class="btn sec sm" data-act="ocr">${esc(t('readPhoto'))}</button>`:''}${x.thumb||x.text?`<label class="field">${esc(t('textFound'))}<textarea class="inp" id="inpText" data-input="text">${esc(x.text)}</textarea></label>`:''}${who('sentBy')}`;
   if(x.status) h+=`<div class="note busy">${x.busy?'<span class="spin"></span>':''}<span>${esc(x.status)}</span></div>`;
   if(x.fileHash) h+=`<p class="tiny">${esc(t('fileFp'))} <span class="mono">${esc(x.fileHash)}</span></p>`;
   openSheet(h+`<button class="btn full" data-act="saveRecord">${ic('lock',18)} ${esc(t('saveRecord'))}</button>`);
@@ -2960,7 +2969,7 @@ const loadScript=src=>new Promise((res,rej)=>{ const s=document.createElement('s
 const shrink=(url,max)=>new Promise(res=>{ const img=new Image(); img.onload=()=>{ const k=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',.82)); }; img.onerror=()=>res(url); img.src=url; });
 async function ocrBlobs(blobs){ const {text}=await SAMPLE('Transcribe all text in these images exactly as written, line by line, in the original language and script. Do not summarise, translate, correct or add anything. If it is a chat screenshot, write each message as: [date time] Sender: message. Output only the transcription.',{images:blobs,modelTier:'default'}); return text.trim(); }
 async function onFile(kind,file){
-  const x=ui.inp; if(!file) return; x.fileName=file.name; x.file=file;
+  const x=ui.inp; if(!file) return; x.fileName=file.name; x.fileKind=kind; x.file=file;
   const buf=await readAs(file,'buf'); x.fileHash=await sha256Bytes(new Uint8Array(buf));
   if(kind==='txt'){ x.text=new TextDecoder().decode(buf); x.status=t('msgsFound',{n:parseChat(x.text).length}); }
   if(kind==='audio'){ x.audioURL=URL.createObjectURL(file); x.status=''; }
