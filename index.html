@@ -557,6 +557,17 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
   html:not(.lay-phone) .v-auth .auth-main{grid-column:2;grid-row:2;width:100%;max-width:34rem;margin:0 auto;padding:3rem 2rem;box-sizing:border-box}
 }
 @media (min-width:1400px){ html:not(.lay-phone) .home-grid{grid-template-columns:minmax(0,1fr) 24rem} }
+
+/* snip and photo highlights: underlined lines DraftIt used, shaded key words */
+.ocr-fig{margin:0;display:flex;flex-direction:column;gap:.5rem}
+.ocr-wrap{position:relative;display:inline-block;max-width:100%;align-self:flex-start;border-radius:var(--r-s);overflow:hidden;border:1px solid var(--line)}
+.ocr-wrap img{display:block;max-width:100%;max-height:34rem;width:auto;height:auto}
+.ocr-fig.sm .ocr-wrap img{max-height:14rem}
+.ocr-ul{position:absolute;height:3px;margin-top:1px;background:#0B2E63;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.7)}
+.ocr-hl{position:absolute;background:rgba(47,111,219,.22);border-radius:3px;outline:1.5px solid rgba(11,46,99,.55)}
+.ocr-key{display:inline-block;width:1.75rem;height:.75rem;flex:none;border-bottom:3px solid #0B2E63;background:rgba(47,111,219,.22)}
+.msg.used .txt{text-decoration:underline;text-decoration-color:#0B2E63;text-decoration-thickness:2px;text-underline-offset:4px}
+.msg.used .n{background:var(--brand);color:#FFFFFF;border-radius:6px;padding:0 .3rem}
 </style>
 </head>
 <body>
@@ -1399,6 +1410,9 @@ langAndSize:["Language and text size","भाषा और अक्षरों
 });
 
 Object.assign(I18N,{
+ocrLegend:["Underlined: the lines DraftIt used for the agreement. Shaded: amounts, dates and key words.","रेखांकित: वे पंक्तियाँ जो DraftIt ने समझौते में इस्तेमाल कीं। छायांकित: रकम, तारीखें और मुख्य शब्द।","अधोरेखित: DraftIt ने करारासाठी वापरलेल्या ओळी. छायांकित: रक्कम, तारखा आणि मुख्य शब्द.","అండర్‌లైన్: DraftIt ఒప్పందానికి వాడిన పంక్తులు. షేడ్: మొత్తాలు, తేదీలు, ముఖ్య పదాలు.","அடிக்கோடு: DraftIt ஒப்பந்தத்திற்குப் பயன்படுத்திய வரிகள். நிழல்: தொகைகள், தேதிகள், முக்கியச் சொற்கள்.","ಅಡಿಗೆರೆ: DraftIt ಒಪ್ಪಂದಕ್ಕೆ ಬಳಸಿದ ಸಾಲುಗಳು. ಛಾಯೆ: ಮೊತ್ತಗಳು, ದಿನಾಂಕಗಳು ಮತ್ತು ಮುಖ್ಯ ಪದಗಳು."],
+ocrNone:["No text found in this picture. Type what it says below.","इस फ़ोटो में कोई लिखा नहीं मिला। नीचे लिखें कि इसमें क्या है।","या फोटोमध्ये मजकूर सापडला नाही. खाली त्यात काय आहे ते लिहा.","ఈ చిత్రంలో అక్షరాలు కనిపించలేదు. కింద అందులో ఉన్నది టైప్ చేయండి.","இந்தப் படத்தில் உரை எதுவும் இல்லை. கீழே அதில் உள்ளதைத் தட்டச்சு செய்யுங்கள்.","ಈ ಚಿತ್ರದಲ್ಲಿ ಬರಹ ಸಿಗಲಿಲ್ಲ. ಕೆಳಗೆ ಅದರಲ್ಲಿರುವುದನ್ನು ಟೈಪ್ ಮಾಡಿ."],
+ocrFail:["Could not read this picture here. Check the internet, or type what it says below.","यह फ़ोटो पढ़ी नहीं जा सकी। इंटरनेट जांचें, या नीचे लिखें कि इसमें क्या है।","हा फोटो वाचता आला नाही. इंटरनेट तपासा, किंवा खाली त्यात काय आहे ते लिहा.","ఈ చిత్రాన్ని చదవలేకపోయాం. ఇంటర్నెట్ చూడండి, లేదా కింద అందులో ఉన్నది టైప్ చేయండి.","இந்தப் படத்தைப் படிக்க முடியவில்லை. இணையத்தைச் சரிபார்க்கவும், அல்லது கீழே அதில் உள்ளதைத் தட்டச்சு செய்யுங்கள்.","ಈ ಚಿತ್ರ ಓದಲಾಗಲಿಲ್ಲ. ಇಂಟರ್ನೆಟ್ ಪರಿಶೀಲಿಸಿ, ಅಥವಾ ಕೆಳಗೆ ಅದರಲ್ಲಿರುವುದನ್ನು ಟೈಪ್ ಮಾಡಿ."],
 transcriptHint:["Made from the recording on this device. Listen once and fix any wrong words before saving.","यह रिकॉर्डिंग से इसी डिवाइस पर बना है। एक बार सुनकर गलत शब्द ठीक करें, फिर सेव करें।","हे रेकॉर्डिंगमधून याच डिव्हाइसवर तयार झाले आहे. एकदा ऐकून चुकीचे शब्द दुरुस्त करा, मग सेव्ह करा.","ఇది రికార్డింగ్ నుంచి ఈ పరికరంలోనే తయారైంది. ఒకసారి విని తప్పు పదాలు సరిచేసి సేవ్ చేయండి.","இது பதிவிலிருந்து இந்தச் சாதனத்திலேயே உருவானது. ஒருமுறை கேட்டு தவறான சொற்களைத் திருத்திச் சேமியுங்கள்.","ಇದು ರೆಕಾರ್ಡಿಂಗ್‌ನಿಂದ ಈ ಸಾಧನದಲ್ಲೇ ತಯಾರಾಗಿದೆ. ಒಮ್ಮೆ ಕೇಳಿ ತಪ್ಪು ಪದಗಳನ್ನು ಸರಿಪಡಿಸಿ ಸೇವ್ ಮಾಡಿ."],
 asrTitle:["Speech to text","बोली से लिखित","बोलण्यातून मजकूर","మాట నుంచి అక్షరాలు","பேச்சிலிருந்து உரை","ಮಾತಿನಿಂದ ಬರಹ"],
 asrLangLbl:["Language spoken","बोली गई भाषा","बोललेली भाषा","మాట్లాడిన భాష","பேசிய மொழி","ಮಾತನಾಡಿದ ಭಾಷೆ"],
@@ -2055,7 +2069,7 @@ async function snipAct(k,doc){
     case 'pip': await openPip(); break;
     case 'stopShare': stopShare(); renderSnip(); break;
     case 'sendPending': { const p=SN.pending||[]; SN.pending=null; for(const it of p){ if(it.text!=null) await snipText(it.text,it.name); else await snipUpload(it.blob,'share',it.name); } break; }
-    case 'view': { const id=SN.dealTo||snipTarget(); SN.open=false; if(SN.pip&&!SN.pip.closed) window.focus(); ui.view='deal'; ui.dealId=id; ui.tab='evidence'; window.scrollTo(0,0); render(); break; }
+    case 'view': { const id=SN.dealTo||snipTarget(), rid=SN.recId; SN.open=false; if(SN.pip&&!SN.pip.closed) window.focus(); ui.view='deal'; ui.dealId=id; ui.tab='evidence'; window.scrollTo(0,0); render(); const dd=deal(id); if(rid&&dd&&dd.records.some(x=>x.id===rid)) recordSheet(rid); break; }
   }
 }
 function stopShare(){ if(SN.stream){ SN.stream.getTracks().forEach(tr=>tr.stop()); } SN.stream=null; SN.video=null; }
@@ -2108,11 +2122,16 @@ async function snipUpload(blob,how,name){
   SN.dealTo=d.id; snipSet('busy',t('snipUploadingTo',{deal:tx(d.title)}));
   try{
     const buf=new Uint8Array(await blob.arrayBuffer()), fileHash=await sha256Bytes(buf), url=await readAs(blob,'url'), thumb=await shrink(url,1000);
-    let text='', method='image';
-    if(SAMPLE){ SN.msg=t('snipReading'); renderSnip(); try{ text=await ocrBlobs([blob]); method='ocr'; }catch(e){ text=''; } }
-    const up=nowISO(), pm=text?parseChat(text):[], messages=pm.length?pm:text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:null,sender:'',text:p.trim()})).filter(m=>m.text);
+    let text='', method='image', loc=null;
+    SN.msg=t('snipReading'); renderSnip();
+    const locP=ocrLocal(blob).catch(e=>{ console.warn('ocr',e); return null; });
+    if(SAMPLE){ try{ text=await ocrBlobs([blob]); method='ocr'; }catch(e){ text=''; } }
+    loc=await locP;
+    if(!text&&loc&&loc.text){ text=loc.text; method='ocr'; }
+    const fromLoc=loc&&loc.text===text&&loc.paras.length, pm=text&&!fromLoc?parseChat(text):[];
+    const up=nowISO(), messages=pm.length>=2&&pm.some(m=>m.sender)?pm:(fromLoc?loc.paras:text.split(/\n{2,}/)).map(p=>({ts:null,sender:'',text:String(p).replace(/\s*\n\s*/g,' ').trim()})).filter(m=>m.text).map((m,i)=>Object.assign(m,{n:i+1}));
     const stamp=up.slice(0,16).replace('T',' ').replace(':','');
-    const rec=await mkRecord({id:'CR-'+(++S.counter),dealId:d.id,type:'photo',name:name||('Snip '+stamp+'.png'),uploadedAt:up,rawText:text,messages,method,fileHash,media:{kind:'image',thumb},snip:how});
+    const rec=await mkRecord({id:'CR-'+(++S.counter),dealId:d.id,type:'photo',name:name||('Snip '+stamp+'.png'),uploadedAt:up,rawText:text,messages,method,fileHash,media:Object.assign({kind:'image',thumb},loc&&loc.lines.length?{ocr:{lines:loc.lines}}:{}),snip:how});
     d.records.push(rec); save();
     snipSet('done',`${tx(d.title)} · ${rec.id}`,rec.id); if(!SN.open&&!(SN.pip&&!SN.pip.closed)) toast(t('snipToast',{deal:tx(d.title)}));
     if(ui.view==='deal'&&ui.dealId===d.id){ ui.keep=true; render(); }
@@ -2475,7 +2494,7 @@ function renderData(){
 }
 /* ---------- sheets ---------- */
 function openSheet(html){ $('#sheet').innerHTML=html; $('#sheetWrap').hidden=false; document.body.style.overflow='hidden'; }
-function closeSheet(){ stopRead(); $('#sheetWrap').hidden=true; $('#sheet').innerHTML=''; document.body.style.overflow=''; if(ui.inp&&ui.inp.audioURL&&/^blob:/.test(ui.inp.audioURL)){ try{URL.revokeObjectURL(ui.inp.audioURL);}catch(e){} } ui.inp=null; }
+function closeSheet(){ ui.openRec=null; stopRead(); $('#sheetWrap').hidden=true; $('#sheet').innerHTML=''; document.body.style.overflow=''; if(ui.inp&&ui.inp.audioURL&&/^blob:/.test(ui.inp.audioURL)){ try{URL.revokeObjectURL(ui.inp.audioURL);}catch(e){} } ui.inp=null; }
 const sheetHead=(title,sub)=>`<div class="sheet-head"><div class="stack-s" style="gap:2px;min-width:0"><h2 class="h2">${esc(title)}</h2>${sub?`<span class="tiny">${sub}</span>`:''}</div><button class="ibtn" data-act="closeSheet" aria-label="${esc(t('close'))}">×</button></div>`;
 function msgRows(d,refs){ return refs.map(r=>{ const m=msgByRef(d,r); if(!m) return ''; return `<div class="msg"><span class="n">#${m.n}</span><div><div class="row between"><span class="who">${esc(m.sender)}</span><span class="tiny">${esc(m.ts?fmtDT(m.ts):'')}</span></div><div class="txt">${esc(m.text)}</div></div></div>`; }).join(''); }
 function termSheet(k){
@@ -2487,9 +2506,9 @@ function termSheet(k){
   openSheet(h);
 }
 function recordSheet(id){
-  const d=deal(), r=d.records.find(x=>x.id===id);
+  const d=deal(), r=d.records.find(x=>x.id===id); ui.openRec=id;
   let h=sheetHead(recName(r),`${esc(r.id)} · ${esc(t('src_'+r.type))}`)+`<dl class="kv"><dt>${esc(t('uploadedBy'))}</dt><dd>${esc(r.uploadedByName)} · <span class="mono">${esc(r.uploadedBy)}</span></dd><dt>${esc(t('uploadedOn'))}</dt><dd>${esc(fmtDT(r.uploadedAt))}</dd><dt>${esc(t('source'))}</dt><dd>${esc(t('src_'+r.type))}</dd><dt>${esc(t('sentOn'))}</dt><dd>${r.sourceFrom?esc(fmtDT(r.sourceFrom))+(r.sourceTo&&r.sourceTo!==r.sourceFrom?' – '+esc(fmtDT(r.sourceTo)):''):esc(t('noTime'))}</dd><dt>${esc(t('capturedAs'))}</dt><dd>${esc(t({verbatim:'m_verbatim',transcript:'m_transcript',ocr:'m_ocr','pdf-text':'m_pdf'}[r.method]||'m_verbatim'))}</dd><dt>${esc(t('fingerprint'))}</dt><dd class="mono">${esc(r.sha256)}</dd>${r.consent?`<dt>${esc(t('consent'))}</dt><dd>${esc(t('c_'+r.consent.basis))} · ${esc(t('partOf'))}</dd>`:''}</dl>`;
-  if(r.media&&r.media.thumb) h+=`<img class="thumb" src="${esc(r.media.thumb)}" alt="">`;
+  if(r.media&&r.media.thumb) h+=snipFigure(d,r);
   if(r.type==='voice') h+=`<div class="row wrap">${sayBtn('recMsgs',{lang:'en',sel:'.txt',label:'playVoice'})}</div>`;
   if(r.media&&r.media.src&&AUDIO[r.media.src]) h+=`<audio controls preload="none" src="${AUDIO[r.media.src]}" style="width:100%"></audio>`;
   else if(r.media&&r.media.data) h+=`<audio controls preload="none" src="${esc(r.media.data)}" style="width:100%"></audio>`;
@@ -2497,7 +2516,7 @@ function recordSheet(id){
   if(r.asr) h+=`<p class="tiny">${esc(t(r.asr.edited?'asrRecEdited':'asrRecAuto'))}</p>`;
   else if(r.media&&r.media.demo) h+=`<div class="note">${esc(t('demoAudio'))}</div>`;
   h+=`<div class="card pad stack-s seal-mini"><b class="small row" style="gap:6px">${ic('shield',16)} ${esc(t('fileCheckT'))}</b><span class="tiny">${esc(t('fileCheckB'))}</span><span class="mono">SHA-256 ${esc(r.sha256)}</span><div class="row wrap">${r.media&&(r.media.src||r.media.data)?`<button class="btn sec sm" data-act="dlOriginal" data-id="${r.id}">${ic('down',16)} ${esc(t('dlOriginal'))}</button>`:''}<label class="btn sec sm">${ic('file',16)} ${esc(t('checkCopy'))}<input type="file" hidden data-chkfile="${r.id}"></label></div><div id="chkOut"></div></div>`;
-  h+=`<div class="row between"><span class="lbl">${esc(t('original'))}</span><button class="btn sec sm" data-act="verifyRecord" data-id="${r.id}">${ic('shield',16)} ${esc(t('verify'))}</button></div><div id="recVerify"></div><div id="recMsgs">${r.messages.map(m=>`<div class="msg"><span class="n">#${m.n}</span><div><div class="row between"><span class="who">${esc(m.sender)}</span><span class="tiny">${esc(m.ts?fmtDT(m.ts):'')}</span></div><div class="txt">${esc(m.text)}</div></div></div>`).join('')}</div>`;
+  h+=`<div class="row between"><span class="lbl">${esc(t('original'))}</span><button class="btn sec sm" data-act="verifyRecord" data-id="${r.id}">${ic('shield',16)} ${esc(t('verify'))}</button></div><div id="recVerify"></div><div id="recMsgs">${(()=>{ const U=usedMsgNs(d,r); return r.messages.map(m=>`<div class="msg ${U.has(m.n)?'used':''}"><span class="n">#${m.n}</span><div><div class="row between"><span class="who">${esc(m.sender)}</span><span class="tiny">${esc(m.ts?fmtDT(m.ts):'')}</span></div><div class="txt">${esc(m.text)}</div></div></div>`).join(''); })()}</div>`;
   openSheet(h);
 }
 function clauseSheet(cid){
@@ -2976,6 +2995,64 @@ function endTutorial(){ stopSpeak(true); const a=acct(); if(a){ a.tutDone=true; 
 const SRC=[['paste','paste'],['whatsapp','chat'],['voice','mic'],['pdf','file'],['photo','cam']];
 const blankInp=type=>({type,text:'',consent:'',party:false,speaker:'cp',srcTime:'',fileName:'',fileHash:'',status:''});
 
+
+/* ---------- reading text in pictures (on the device) ----------
+   Tesseract.js finds every line and word in a snip or photo, with its position, so DraftIt can underline
+   the parts it used. It runs in the browser; the picture is not sent anywhere for this step. */
+const TESS_LIB='https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js';
+const TESS_LANG={en:'eng',hi:'hin',mr:'mar',te:'tel',ta:'tam',kn:'kan'};
+let TESS=null;
+async function tessWorker(){
+  const langs=['eng']; const l=TESS_LANG[S.settings.lang]; if(l&&l!=='eng') langs.push(l);
+  const key=langs.join('+'); if(TESS&&TESS.key===key) return TESS.w;
+  if(!window.Tesseract) await loadScript(TESS_LIB);
+  if(TESS){ try{ TESS.w.terminate(); }catch(e){} TESS=null; }
+  const w=await window.Tesseract.createWorker(langs,1,Object.assign({},window.__tessPaths||{}));
+  TESS={key,w}; return w;
+}
+/* returns {text, lines:[{t,b:[x0,y0,x1,y1] as fractions of the picture, w:[{t,b}]}], paras:[text]} */
+async function ocrLocal(blob){
+  const bmp=await createImageBitmap(blob), W=bmp.width, Hh=bmp.height; try{ bmp.close(); }catch(e){}
+  const w=await tessWorker(); const {data}=await w.recognize(blob,{},{text:true,blocks:true});
+  const f=b=>[+(b.x0/W).toFixed(4),+(b.y0/Hh).toFixed(4),+(b.x1/W).toFixed(4),+(b.y1/Hh).toFixed(4)];
+  const lines=[], paras=[];
+  (data.blocks||[]).forEach(bl=>(bl.paragraphs||[]).forEach(p=>(p.lines||[]).forEach(ln=>{ const tx=(ln.text||'').replace(/\s+/g,' ').trim(); if(!tx) return; lines.push({t:tx,b:f(ln.bbox),w:(ln.words||[]).filter(x=>(x.text||'').trim()&&x.confidence>30).map(x=>({t:x.text,b:f(x.bbox)}))}); })));
+  lines.sort((a,b)=>a.b[1]-b.b[1]||a.b[0]-b.b[0]);
+  /* one message per chat bubble: a line ending in a time (10:02 am) closes a bubble; lines close together join */
+  const TIME=/\s*\d{1,2}[:.]\d{2}\s*(am|pm|AM|PM)?\s*[✓✔vV/]*\s*$/;
+  let cur=null, prevB=null;
+  lines.forEach(l=>{ const ended=TIME.test(l.t), tx=l.t.replace(TIME,'').trim(), lh=l.b[3]-l.b[1];
+    if(tx){ if(cur&&prevB&&!cur.closed&&(l.b[1]-prevB[3])<lh*0.6&&Math.abs(l.b[0]-prevB[0])<0.08) cur.t+=' '+tx; else { cur={t:tx,closed:false}; paras.push(cur); } }
+    if(cur&&(ended||!tx)) cur.closed=true; prevB=l.b; });
+  const ptxt=paras.map(p=>p.t);
+  return {text:ptxt.join('\n\n')||(data.text||'').trim(),lines,paras:ptxt};
+}
+/* which lines of a picture DraftIt actually used: lines that match a message cited as evidence for a term */
+const normWords=s=>(s||'').toLowerCase().normalize('NFKC').replace(/[^\p{L}\p{N}₹]+/gu,' ').trim().split(' ').filter(x=>x.length>1||/\d/.test(x));
+function usedMsgNs(d,r){
+  const set=new Set(), pre=r.id+'#', add=ref=>{ if(typeof ref==='string'&&ref.startsWith(pre)) set.add(+ref.slice(pre.length)); };
+  Object.values(d.terms||{}).forEach(tm=>{ if(!tm) return; (tm.evidence||[]).forEach(add); (tm.history||[]).forEach(h=>h&&add(h.ref)); });
+  return set;
+}
+function usedLineIdx(d,r){
+  const o=r.media&&r.media.ocr; if(!o) return [];
+  const used=r.messages.filter(m=>usedMsgNs(d,r).has(m.n)).map(m=>new Set(normWords(m.text)));
+  if(!used.length) return [];
+  return o.lines.map((l,i)=>{ const ws=normWords(l.t); if(!ws.length) return -1; const hit=ws.filter(x=>used.some(S=>S.has(x))).length; return hit/ws.length>=0.5&&hit>=1?i:-1; }).filter(i=>i>=0);
+}
+const KEY_WORD=/\d|₹|rs\.?$|rupee|rupaye|advance|deliver|payment|paid|gst|upi|cash|bill|invoice|box|piece|kg|per|date|nov|oct|dec|jan|feb|mar|apr|may|jun|jul|aug|sep|ok|done|agreed|confirm/i;
+function snipFigure(d,r,small){
+  const m=r.media; if(!m||!m.thumb) return '';
+  const pct=v=>(v*100).toFixed(2)+'%';
+  let ov='';
+  if(m.ocr){ const idx=new Set(usedLineIdx(d,r));
+    m.ocr.lines.forEach((l,i)=>{ if(!idx.has(i)) return; const [x0,,x1,y1]=l.b;
+      (l.w||[]).filter(w=>KEY_WORD.test(w.t)).forEach(w=>{ ov+=`<i class="ocr-hl" style="left:${pct(w.b[0])};top:${pct(w.b[1])};width:${pct(w.b[2]-w.b[0])};height:${pct(w.b[3]-w.b[1])}"></i>`; });
+      ov+=`<i class="ocr-ul" style="left:${pct(x0)};top:${pct(y1)};width:${pct(x1-x0)}"></i>`; });
+  }
+  return `<figure class="ocr-fig ${small?'sm':''}"><div class="ocr-wrap"><img src="${esc(m.thumb)}" alt="${esc(recName(r))}">${ov}</div>${m.ocr&&ov?`<figcaption class="tiny row" style="gap:8px"><span class="ocr-key"></span>${esc(t('ocrLegend'))}</figcaption>`:m.ocr?'':''}</figure>`;
+}
+
 /* ---------- speech to text ----------
    Voice notes and call recordings are turned into text on the user's own device with OpenAI's Whisper model
    (run by transformers.js in a background worker). The audio never leaves the device for this step.
@@ -3078,7 +3155,10 @@ async function onFile(kind,file){
   const buf=await readAs(file,'buf'); x.fileHash=await sha256Bytes(new Uint8Array(buf));
   if(kind==='txt'){ x.text=new TextDecoder().decode(buf); x.status=t('msgsFound',{n:parseChat(x.text).length}); }
   if(kind==='audio'){ x.audioURL=URL.createObjectURL(file); x.status=''; x.asr=null; setTimeout(()=>transcribe(x),0); }
-  if(kind==='image'){ x.thumb=await shrink(await readAs(file,'url'),1000); x.status=''; }
+  if(kind==='image'){ x.thumb=await shrink(await readAs(file,'url'),1000); x.status=''; x.ocr=null;
+    if(!SAMPLE){ x.busy=true; x.status=t('readingPhoto'); addEvidenceSheet(); }
+    ocrLocal(file).then(o=>{ x.ocr={lines:o.lines}; if(!SAMPLE&&ui.inp===x){ syncInp(); if(!x.text) { x.text=o.text; x.method='ocr'; } x.busy=false; x.status=o.text?'':t('ocrNone'); addEvidenceSheet(); } }).catch(e=>{ console.warn('ocr',e); if(!SAMPLE&&ui.inp===x){ x.busy=false; x.status=t('ocrFail'); addEvidenceSheet(); } });
+    if(!SAMPLE){ return; } }
   if(kind==='pdf'){ x.busy=true; x.status=t('readingPdf'); addEvidenceSheet();
     try{ if(!window.pdfjsLib){ await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
       const pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(buf.slice(0))}).promise, pages=Math.min(pdf.numPages,20), out=[];
@@ -3100,7 +3180,7 @@ async function saveRecord(){
   else { const sender=x.speaker==='both'?t('bothCall'):partyName(d,x.speaker); messages=text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:srcTs,sender,text:p.trim()})).filter(m=>m.text); method=x.type==='voice'?'transcript':x.method||'ocr'; }
   const voiceMedia=x.type!=='voice'?null:x.audioSrc?{kind:'audio',src:x.audioSrc}:x.file&&x.file.size<=1500000?{kind:'audio',data:await readAs(x.file,'url'),mime:x.file.type||'audio/mpeg'}:x.file?{kind:'audio',big:true}:{kind:'audio',demo:!!x.audioDemo};
   const asrInfo=x.type==='voice'&&x.asr&&x.asr.state==='done'?{model:x.asr.model,lang:x.asr.lang,edited:text!==(x.autoText||'').trim()}:null;
-  const rec=await mkRecord({id,dealId:d.id,type:x.type,name:x.type==='paste'?'Pasted chat':(x.fileName||en('src_'+x.type)),uploadedAt:up,rawText:text,messages,method,fileHash:x.fileHash||null,media:x.thumb?{kind:'image',thumb:x.thumb}:voiceMedia,asr:asrInfo,consent:x.type==='voice'?{basis:x.consent,party:true,at:up}:null});
+  const rec=await mkRecord({id,dealId:d.id,type:x.type,name:x.type==='paste'?'Pasted chat':(x.fileName||en('src_'+x.type)),uploadedAt:up,rawText:text,messages,method,fileHash:x.fileHash||null,media:x.thumb?Object.assign({kind:'image',thumb:x.thumb},x.ocr?{ocr:x.ocr}:{}):voiceMedia,asr:asrInfo,consent:x.type==='voice'?{basis:x.consent,party:true,at:up}:null});
   d.records.push(rec); save(); closeSheet(); ui.tab='terms'; render(); toast(t('o_saved',{x:id})); analyseDeal(d);
 }
 
@@ -3170,6 +3250,7 @@ async function analyseDeal(d){
   if(d.draft) d.draft.clauses=d.draft.clauses.map(c=>{ if(c.edited||c.pending) return c; const f=fresh.find(x=>x.id===c.id); if(f&&(f.text!==c.text||f.open!==c.open)){ log(d,c.id,d.draft.rev,'generated',f.text,'@pakka',nowISO(),{k:'n_updated'}); return f; } return c; });
   else if(d.versions.length) d.needsRevision=true;
   ui.busy=null; save(); render(); toast(t('o_done',{n:confidence(d).total})); ensureTr();
+  if(ui.openRec&&ui.dealId===d.id&&!$('#sheetWrap').hidden&&d.records.some(r=>r.id===ui.openRec)) recordSheet(ui.openRec);
 }
 
 /* ---------- agreement actions ---------- */
