@@ -1,6 +1,6 @@
 {
-  "name": "Draft It",
-  "short_name": "Draft It",
+  "name": "DraftIt",
+  "short_name": "DraftIt",
   "description": "Turn WhatsApp deals into clear, signed agreements.",
   "start_url": "./",
   "scope": "./",

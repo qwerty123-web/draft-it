@@ -1,4 +1,4 @@
--- Draft It: online storage for Supabase.
+-- DraftIt: online storage for Supabase.
 -- Run once in your Supabase project: SQL Editor > New query > paste this file > Run.
 
 -- One private workspace per account: profile, deals, signatures and settings.

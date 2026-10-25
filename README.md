@@ -1,8 +1,8 @@
-# Draft It
+# DraftIt
 
-**“Ok done 👍” is not a contract. Draft It turns it into one.**
+**“Ok done 👍” is not a contract. DraftIt turns it into one.**
 
-Draft It turns informal small-business deals (WhatsApp chats, voice notes, bills and photos) into clear agreements that both sides sign, with every record fingerprinted so tampering shows up. Built for Indian small businesses, in English, Hindi, Marathi, Telugu, Tamil and Kannada.
+DraftIt turns informal small-business deals (WhatsApp chats, voice notes, bills and photos) into clear agreements that both sides sign, with every record fingerprinted so tampering shows up. Built for Indian small businesses, in English, Hindi, Marathi, Telugu, Tamil and Kannada.
 
 Built for Srujana Tech Fest 2026, Legal Services theme, problem LS-06 “From Handshake to Contract”.
 
@@ -20,7 +20,7 @@ Built for Srujana Tech Fest 2026, Legal Services theme, problem LS-06 “From Ha
 - **Tamper check.** Re-checks every fingerprint and shows what a single changed word looks like.
 - **Snip tool.** Add the Snip from Home and a button stays on every screen. On a laptop it grabs any window (WhatsApp Web, email, a PDF), you drag a box around the messages, and it uploads straight into the deal with an "Uploaded" tick. In Chrome or Edge it can float on top of other apps. On a phone, pick or paste a screenshot, or share one to the installed app.
 - **Calendar that fills itself.** Deal deliveries, payments and deadlines, plus GST return dates (GSTR-1 on the 11th, GSTR-3B on the 20th), quarterly TDS returns, advance tax instalments and national holidays.
-- **Laptop layout.** On wider screens Draft It switches to a side menu, a two-column deal grid, a month-plus-agenda calendar and centred dialogs. Settings → Screen layout switches back to the phone size if you prefer.
+- **Laptop layout.** On wider screens DraftIt switches to a side menu, a two-column deal grid, a month-plus-agenda calendar and centred dialogs. Settings → Screen layout switches back to the phone size if you prefer.
 - **Lawyer check, scam report, dispute routes, live deal chat, read aloud** in all six languages.
 
 ## Use it on your phone or computer
@@ -29,26 +29,26 @@ The live link works in any modern browser. To install it like an app:
 
 - **Android (Chrome):** open the link, tap the menu (⋮), then **Install app** or **Add to Home screen**.
 - **iPhone or iPad (Safari):** open the link, tap **Share**, then **Add to Home Screen**.
-- **Windows, Mac or Linux (Chrome or Edge):** open the link and click the install icon in the address bar, or menu → **Install Draft It**. It opens in its own window with the laptop layout.
+- **Windows, Mac or Linux (Chrome or Edge):** open the link and click the install icon in the address bar, or menu → **Install DraftIt**. It opens in its own window with the laptop layout.
 
-Once installed on Android, you can share a screenshot or chat export from any app to Draft It and the Snip tool uploads it to a deal.
+Once installed on Android, you can share a screenshot or chat export from any app to DraftIt and the Snip tool uploads it to a deal.
 
-Draft It runs online. With online storage switched on (below), every account's deals, signatures and settings are saved to the cloud, so you can log in on any phone or computer and pick up where you left off.
+DraftIt runs online. With online storage switched on (below), every account's deals, signatures and settings are saved to the cloud, so you can log in on any phone or computer and pick up where you left off.
 
 ### Turn on the AI features (optional)
 
-Without a key, Draft It reads chats with simple rules on the device. For full chat reading, translation of new content, photo reading and agreement comparison, open **Settings → Claude AI**, paste an Anthropic API key and tap **Save key**. The key is stored only in your browser and is sent only to `api.anthropic.com`.
+Without a key, DraftIt reads chats with simple rules on the device. For full chat reading, translation of new content, photo reading and agreement comparison, open **Settings → Claude AI**, paste an Anthropic API key and tap **Save key**. The key is stored only in your browser and is sent only to `api.anthropic.com`.
 
 ## Switch on online accounts and storage (Supabase, free)
 
-Draft It stores accounts and data in [Supabase](https://supabase.com), a hosted Postgres database with email login. Each account can only read and write its own data (row-level security). Live deal chat between two phones also runs through Supabase Realtime.
+DraftIt stores accounts and data in [Supabase](https://supabase.com), a hosted Postgres database with email login. Each account can only read and write its own data (row-level security). Live deal chat between two phones also runs through Supabase Realtime.
 
 1. **Create a project.** Sign up at supabase.com, click **New project**, give it a name (for example `draft-it`), set a database password, and pick the region **South Asia (Mumbai)** so data stays in India. Wait about two minutes for it to start.
 2. **Create the table.** Open **SQL Editor → New query**, paste the whole of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
 3. **Send login codes by email.** Open **Authentication → Emails → Templates**. In both **Magic Link** and **Confirm signup**, replace the body with:
 
    ```html
-   <h2>Your Draft It login code</h2>
+   <h2>Your DraftIt login code</h2>
    <p style="font-size:28px;letter-spacing:6px"><b>{{ .Token }}</b></p>
    <p>It works once and expires in an hour.</p>
    ```
@@ -68,7 +68,7 @@ Draft It stores accounts and data in [Supabase](https://supabase.com), a hosted 
 
 Supabase's built-in email sender allows only a few login emails per hour. For a public launch, add your own SMTP sender under **Authentication → Emails → SMTP Settings** (Brevo, Resend and Amazon SES all have free tiers).
 
-Until `config.js` has keys, Draft It still runs, but data stays in the browser of each device and the demo accounts are the main way in.
+Until `config.js` has keys, DraftIt still runs, but data stays in the browser of each device and the demo accounts are the main way in.
 
 ## Host your own copy
 
@@ -126,4 +126,4 @@ Commit and push; GitHub Pages updates in about a minute.
 - This is a hackathon demo. OTPs, payments, lawyer accounts and the Aadhaar eSign step are simulated. A live service needs a licensed eSign provider, an e-stamping partner, DPDP Act compliance, an IT Rules grievance officer and CERT-In incident reporting.
 - Live chat between two phones runs through Supabase Realtime once `config.js` has keys. Without keys, the chat room works in demo mode on one device.
 - Lawyer review across different accounts is simulated: the panel lawyers are demo accounts you can switch into from a deal.
-- Draft It is not a law firm and its output is not legal advice. Have important agreements reviewed by an advocate.
+- DraftIt is not a law firm and its output is not legal advice. Have important agreements reviewed by an advocate.

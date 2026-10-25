@@ -1,4 +1,4 @@
-/* Draft It. Uber-inspired: white pages, black bars and buttons, dark blue accents, big bold type,
+/* DraftIt. Uber-inspired: white pages, black bars and buttons, dark blue accents, big bold type,
    large touch targets. Sizes are in rem so the Text size setting scales the whole app. */
 :root{
   --black:#000000; --brand:#0B2E63; --brand-2:#173F82; --brand-3:#0A2756; --navy:#0B2E63; --navy-2:#173F82; --navy-t:#E9EEF7; --on-navy:#FFFFFF; --on-navy-2:#C4CCDA;
