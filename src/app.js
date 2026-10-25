@@ -120,7 +120,10 @@ function makeApiSample(key){
 }
 /* inside the DraftIt Android app (Capacitor) */
 const NATIVE=()=>{ try{ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()); }catch(e){ return false; } };
-const NP=n=>NATIVE()&&window.Capacitor.Plugins?window.Capacitor.Plugins[n]:null;
+const NPC={};
+const NP=n=>{ if(!NATIVE()) return null; if(n in NPC) return NPC[n]; const C=window.Capacitor; let p=null;
+  try{ if(C.isPluginAvailable&&!C.isPluginAvailable(n)) p=null; else if(C.Plugins&&C.Plugins[n]) p=C.Plugins[n]; else if(C.registerPlugin) p=C.registerPlugin(n); }catch(e){ p=null; }
+  return (NPC[n]=p); };
 const APK_URL='https://github.com/qwerty123-web/draft-it/releases/download/android-latest/DraftIt.apk';
 const isAndroid=()=>/android/i.test(navigator.userAgent);
 const getAppCard=()=>NATIVE()||!STANDALONE||isIOS()?'':`<a class="card pad tap get-app" href="${APK_URL}" rel="noopener"><span class="snip-ico">${ic('down',22)}</span><span class="stack-s grow" style="gap:2px;text-align:left"><b>${esc(t('getApp'))}</b><span class="tiny">${esc(t('getAppSub'))}</span></span></a>`;
@@ -211,7 +214,7 @@ async function seedState(){
   let ts='m'; try{ ts=localStorage.getItem('draftit.ts')||'m'; }catch(e){}
   S={v:5,counter:1300,settings:{textSize:ts,lang,rate:0.95,voiceURI:'',ai:true,userName:'',business:'',userId:''},tr:{hi:{},mr:{},te:{},ta:{},kn:{}},deals:[],accounts:{},session:null,notary:[]};
   const RAVI='u_ravi_4821', at0='2026-10-01T10:00:00'+TZ; Object.assign(S.settings,{userName:'Ravi Kumar',business:'Kumar Print & Pack',userId:RAVI});
-  S.accounts[RAVI]={id:RAVI,name:'Ravi Kumar',mobile:'9876543210',role:'seller',business:'Kumar Print & Pack',train:false,tutDone:false,created:at0};
+  S.accounts[RAVI]={id:RAVI,name:'Ravi Kumar',mobile:'9876543210',role:'user',business:'Kumar Print & Pack',train:false,tutDone:false,created:at0};
   LAWYERS.forEach(l=>{ S.accounts[l.acct]={id:l.acct,name:l.name,mobile:l.mobile,role:'lawyer',business:'',lawyerId:l.id,enrol:l.enrol,bar:{l1:'Karnataka',l2:'Maharashtra',l3:'Tamil Nadu'}[l.id],fee:l.fee,train:false,tutDone:false,created:at0}; });
   const AM='Anjali Mehta', RK='Ravi Kumar', VS='Vikram Sharma', SG='Sunil Gupta', PN='Priya Nair';
   const me={id:'me',name:RK,org:'Kumar Print & Pack',role:'Seller',address:'No. 14, 3rd Cross, Chickpet, Bengaluru 560053',gstin:'29ABCDE1234F1Z5',udyam:'UDYAM-KR-03-0012345'};
@@ -703,7 +706,7 @@ function renderNav(){
   const L=isLawyer(), cur=ui.view==='deal'?'home':ui.view;
   const b=(v,i,l)=>`<button data-act="go" data-v="${v}" ${cur===v?'aria-current="page"':''}>${ic(i)}<span>${esc(l)}</span></button>`;
   const a=acct(), brand=`<div class="nav-brand desk">${ic('shield',24)}<span>DraftIt</span></div>`;
-  const foot=`<div class="nav-foot desk">${L?'':`<button data-act="${S.settings.snip?'snipOpen':'snipToggle'}" class="nav-snip">${ic('snip')}<span>${esc(t(S.settings.snip?'snipTool':'snipAdd'))}</span></button>`}${b('settings','gear',t('settings'))}<div class="nav-me"><span class="avatar">${esc((a&&a.name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())}</span><span class="stack-s" style="gap:0;min-width:0"><b>${esc(a?a.name:'')}</b><span class="tiny">${esc(t(a&&a.role==='lawyer'?'role_lawyer':a&&a.role==='buyer'?'buyer':'seller'))}</span></span></div></div>`;
+  const foot=`<div class="nav-foot desk">${L?'':`<button data-act="${S.settings.snip?'snipOpen':'snipToggle'}" class="nav-snip">${ic('snip')}<span>${esc(t(S.settings.snip?'snipTool':'snipAdd'))}</span></button>`}${b('settings','gear',t('settings'))}<div class="nav-me"><span class="avatar">${esc((a&&a.name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())}</span><span class="stack-s" style="gap:0;min-width:0"><b>${esc(a?a.name:'')}</b><span class="tiny">${esc(t(a&&a.role==='lawyer'?'role_lawyer':'role_user'))}</span></span></div></div>`;
   if(L) return `<nav class="nav" aria-label="Main"><div class="nav-in n3">${brand}${b('home','home',t('reqQueue'))}${b('revisions','layers',t('approvals'))}${b('earnings','wallet',t('earnings'))}${foot}</div></nav>`;
   return `<nav class="nav" aria-label="Main"><div class="nav-in">${brand}${b('home','home',t('home'))}${b('calendar','cal',t('calendar'))}<button data-act="addAny" class="nav-add"><span class="plus">${ic('plus',22)}</span><span>${esc(t('add'))}</span></button>${b('revisions','layers',t('revisions'))}${b('lawyer','scale',t('lawyer'))}${foot}</div></nav>`;
 }
@@ -952,11 +955,11 @@ function renderEarnings(){
   return `<section class="stack-s"><h1 class="h1">${esc(t('earnings'))}</h1></section><section class="card pad stack-s"><span class="lbl">${esc(t('feesEarned'))}</span><span class="big">${rupee(total)}</span><span class="tiny">${esc(t('approvals'))}: ${L.length}</span></section><section class="card pad stack-s"><span class="lbl">${esc(t('listingFee'))}</span><b>${rupee(LISTING_FEE)}</b><p class="small muted">${esc(t('noFeeShare'))}</p></section><section class="card pad stack-s"><span class="lbl">${esc(t('lawyerFee'))}</span><b>${rupee(a.fee||0)}</b></section><ul class="list card">${L.map(({d,v})=>`<li class="pad row between"><span class="stack-s" style="gap:2px"><b>${esc(tx(d.title))}</b><span class="tiny">${esc(t('versionN',{n:v.rev}))} · ${esc(fmtDT(v.lawyer.at))}</span></span><span class="fee">${rupee(v.lawyer.fee||0)}</span></li>`).join('')}</ul>`;
 }
 /* ---------- settings ---------- */
-function voicesFor(code){ try{ const bc=langOf(code).bcp.toLowerCase(); return speechSynthesis.getVoices().filter(v=>{ const l=v.lang.toLowerCase().replace('_','-'); return l===bc||l.startsWith(code+'-')||l===code; }); }catch(e){ return []; } }
+function voicesFor(code){ if(!ttsWeb()) return []; try{ const bc=langOf(code).bcp.toLowerCase(); return speechSynthesis.getVoices().filter(v=>{ const l=v.lang.toLowerCase().replace('_','-'); return l===bc||l.startsWith(code+'-')||l===code; }); }catch(e){ return []; } }
 function renderSettings(){
-  const s=S.settings, tts='speechSynthesis' in window, vs=tts?voicesFor(s.lang):[];
+  const s=S.settings, tts=!!ttsWeb()&&!ttsNative(), vs=tts?voicesFor(s.lang):[];
   const a=acct();
-  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':a.role==='buyer'?'buyer':'seller'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div><button class="btn danger full" data-act="logoutAsk">${ic('logout',18)} ${esc(t('logOut'))}</button></section>
+  return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':'role_user'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div><button class="btn danger full" data-act="logoutAsk">${ic('logout',18)} ${esc(t('logOut'))}</button></section>
   <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
   <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}${layoutSeg()}</section>${a.role==='lawyer'?'':`<section class="card pad row between" style="gap:12px"><span class="stack-s" style="gap:2px"><b>${esc(t('snipTool'))}</b><span class="tiny">${esc(t('snipSub'))}</span></span><button class="btn ${s.snip?'sec':''} sm" data-act="snipToggle">${esc(t(s.snip?'snipRemove':'snipAdd'))}</button></section>`}
   <section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
@@ -1050,7 +1053,7 @@ function lawyerSheet(){
   openSheet(h);
 }
 function langSheet(){ openSheet(sheetHead(t('langAndSize'))+`<div class="langs">${LANGS.map(l=>`<button aria-pressed="${S.settings.lang===l.c}" data-act="setLang" data-v="${l.c}" data-close="1">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}`); }
-function newDealSheet(){ openSheet(sheetHead(t('newDeal'))+`<label class="field">${esc(t('dealAbout'))}<input class="inp" id="ndTitle"></label><label class="field">${esc(t('otherName'))}<input class="inp" id="ndName"></label><label class="field">${esc(t('theirBiz'))}<input class="inp" id="ndOrg"></label><div class="stack-s"><span class="lbl">${esc(t('youAre'))}</span><div class="seg" id="ndRole"><button aria-pressed="${acct().role!=='buyer'}" data-act="ndRole" data-v="Seller">${esc(t('seller'))}</button><button aria-pressed="${acct().role==='buyer'}" data-act="ndRole" data-v="Buyer">${esc(t('buyer'))}</button></div></div><button class="btn" data-act="createDeal">${esc(t('createAndAdd'))}</button><button class="link" data-act="ndSample">${ic('spark',14)} ${esc(t('fillSample'))}</button>`); }
+function newDealSheet(){ openSheet(sheetHead(t('newDeal'))+`<label class="field">${esc(t('dealAbout'))}<input class="inp" id="ndTitle"></label><label class="field">${esc(t('otherName'))}<input class="inp" id="ndName"></label><label class="field">${esc(t('theirBiz'))}<input class="inp" id="ndOrg"></label><div class="stack-s"><span class="lbl">${esc(t('sideQ'))}</span><div class="roles two side-pick" id="ndRole" role="radiogroup" aria-label="${esc(t('sideQ'))}">${[['Buyer','buyer','bag','sideBuyerSub'],['Seller','seller','shop','sideSellerSub']].map(([v,l,icn,sub])=>`<button class="role" role="radio" aria-checked="false" data-act="ndRole" data-v="${v}"><span class="role-ico">${ic(icn,26)}</span><b>${esc(t(l))}</b><span class="tiny">${esc(t(sub))}</span></button>`).join('')}</div></div><button class="btn" data-act="createDeal">${esc(t('createAndAdd'))}</button><button class="link" data-act="ndSample">${ic('spark',14)} ${esc(t('fillSample'))}</button>`); }
 /* sample data so nobody has to type a chat to try the app */
 function ddmmyy(dt){ return `${p2(dt.getUTCDate())}/${p2(dt.getUTCMonth()+1)}/${String(dt.getUTCFullYear()).slice(2)}`; }
 async function fillSample(){
@@ -1398,7 +1401,7 @@ async function loadCloud(user){
   else {
     let legacy=null; try{ const w=await SB.from('workspaces').select('data').eq('user_id',user.id).maybeSingle(); legacy=w.data&&w.data.data; }catch(e){}
     if(legacy) applyWorkspace(legacy);
-    else { const A=ui.auth||{}, md=user.user_metadata||{}, role=['seller','buyer','lawyer'].includes(A.role)&&A.mode==='signup'?A.role:(md.role||'seller');
+    else { const A=ui.auth||{}, md=user.user_metadata||{}, role=(A.mode==='signup'&&A.role==='lawyer')||(A.mode!=='signup'&&md.role==='lawyer')?'lawyer':'user';
       const name=String((A.mode==='signup'&&A.name)||md.name||(user.email||'').split('@')[0]).trim();
       S.accounts[user.id]={id:user.id,name,email:user.email||'',mobile:String(A.mobile||'').replace(/\D/g,''),role,business:role==='lawyer'?'':String(A.business||md.business||'').trim(),train:!!A.train,tutDone:false,created:nowISO()};
       if(role==='lawyer') Object.assign(S.accounts[user.id],{lawyerId:'lw_'+user.id.slice(0,8),enrol:String(A.enrol||'').trim(),bar:A.bar||'Karnataka',fee:+A.fee||0});
@@ -1523,7 +1526,7 @@ function guestRoom(id){ const g=newDealObj(id,t('chatRoom'),nowISO(),[{id:'me',n
 
 /* ---------- sign up and log in ---------- */
 function renderAuth(){
-  const A=ui.auth||(ui.auth={mode:'signup',step:'form',role:'seller',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''});
+  const A=ui.auth||(ui.auth={mode:'signup',step:'form',role:'user',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''});
   const lc=`<button class="langbtn" data-act="langSheet" aria-label="${esc(t('langAndSize'))}">${esc(langOf(S.settings.lang).n)}</button>`;
   const f=(k,l,o)=>`<label class="field">${esc(t(l))}<input class="inp" data-auth="${k}" value="${esc(A[k])}" ${o||''}></label>`;
   let h=`<header class="top gut"><div class="brand grow">${ic('shield',22)}DraftIt</div>${lc}</header><section class="band gut auth-band"><h1>${esc(t('welcomeTag'))}</h1><ul class="auth-points desk">${[['chat','authP1'],['shield','authP2'],['pen','authP3']].map(([i,k])=>`<li><span>${ic(i,20)}</span>${esc(t(k))}</li>`).join('')}</ul></section><main class="gut stack auth-main" style="padding-bottom:40px">`;
@@ -1533,7 +1536,7 @@ function renderAuth(){
   else if(SB&&A.mode==='login') h+=`${f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')}<button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t('sendCode'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
   else if(A.step==='otp') h+=`<p class="small">${esc(t('enterOtp'))} · +91 ${esc(A.mobile)}</p><input class="inp otp" data-auth="otp" value="${esc(A.otp)}" inputmode="numeric" maxlength="6" autocomplete="one-time-code" aria-label="${esc(t('enterOtp'))}"><p class="tiny">${esc(t('otpDemo'))}</p><button class="btn full" data-act="authVerify">${esc(t('verifyOtp'))}</button><button class="link" data-act="authBack">${esc(t('back'))}</button>`;
   else if(A.mode==='login') h+=`${f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"')}<button class="btn full" data-act="authOtp">${esc(t('sendOtp'))}</button><p class="tiny">${esc(t('newHere'))} <button class="link" data-act="authMode" data-v="signup">${esc(t('signUp'))}</button></p>`;
-  else { h+=`<div class="stack-s"><span class="lbl">${esc(t('iAmA'))}</span><div class="roles" role="radiogroup" aria-label="${esc(t('iAmA'))}">${[['seller','seller','roleSellerSub','shop'],['buyer','buyer','roleBuyerSub','bag'],['lawyer','role_lawyer','roleLawyerSub','scale']].map(([k,l,sub,icn])=>`<button class="role ${A.role===k?'on':''}" role="radio" aria-checked="${A.role===k}" data-act="authRole" data-v="${k}"><span class="role-ico">${ic(icn,24)}</span><b>${esc(t(l))}</b></button>`).join('')}</div><p class="tiny role-sub">${esc(t(([['seller','roleSellerSub'],['buyer','roleBuyerSub'],['lawyer','roleLawyerSub']].find(x=>x[0]===(A.role||'seller'))||[])[1]||'roleSellerSub'))}</p></div>`;
+  else { h+=`<div class="stack-s"><span class="lbl">${esc(t('iAmA'))}</span><div class="roles two" role="radiogroup" aria-label="${esc(t('iAmA'))}">${[['user','role_user','user'],['lawyer','role_lawyer','scale']].map(([k,l,icn])=>`<button class="role ${A.role===k?'on':''}" role="radio" aria-checked="${A.role===k}" data-act="authRole" data-v="${k}"><span class="role-ico">${ic(icn,24)}</span><b>${esc(t(l))}</b></button>`).join('')}</div><p class="tiny role-sub">${esc(t(A.role==='lawyer'?'roleLawyerSub':'roleUserSub'))}</p></div>`;
     h+=f('name','yourName','autocomplete="name"')+(SB?f('email','emailLbl','type="email" inputmode="email" autocomplete="email" placeholder="you@example.com"')+f('mobile','mobileOpt','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'):f('mobile','mobile','inputmode="numeric" maxlength="10" placeholder="98xxxxxxxx"'));
     if(A.role==='lawyer') h+=f('enrol','enrolNo','placeholder="KAR/1234/2016"')+`<label class="field">${esc(t('barState'))}<select class="sel" data-auth="bar">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat','Kerala'].map(x=>`<option ${A.bar===x?'selected':''}>${x}</option>`).join('')}</select></label>`+f('fee','lawyerFee','inputmode="numeric"');
     else h+=f('business','business');
@@ -1544,7 +1547,7 @@ function renderAuth(){
 function afterLogin(){ ui.quip=1+Math.floor(Math.random()*6); const a=acct(); ui.auth=null; ui.view='home'; ui.dealId=null; ui.tut=a&&!a.tutDone&&a.role!=='lawyer'?0:null; window.scrollTo(0,0); render(); ensureTr(); openHashRoom(); }
 const hashCode=()=>{ const m=(location.hash||'').match(/^#room[-=]?([a-z0-9-]{2,40})$/i); return m?roomCode(m[1]):null; };
 function joinByCode(code){ code=roomCode(code); if(!code) return; const own=acct()&&S.deals.find(x=>roomCode(x.id)===code&&x.owner===S.session); if(own) return openRoom(own.id); if(!ui.guest||ui.guest.id!==code) guestRoom(code); openRoom(code); }
-function openHashRoom(){ const c=hashCode(); if(!c) return; if(!acct()){ ui.auth=Object.assign(ui.auth||{mode:'signup',step:'form',role:'seller',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''},{mode:'join',code:c}); render(); return; } try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} joinByCode(c); }
+function openHashRoom(){ const c=hashCode(); if(!c) return; if(!acct()){ ui.auth=Object.assign(ui.auth||{mode:'signup',step:'form',role:'user',name:'',mobile:'',business:'',enrol:'',bar:'Karnataka',fee:'499',terms:false,train:false,otp:''},{mode:'join',code:c}); render(); return; } try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} joinByCode(c); }
 window.addEventListener('hashchange',()=>{ if(S) openHashRoom(); });
 
 /* ---------- first-run tutorial ---------- */
@@ -1842,35 +1845,55 @@ function initSigPad(){ const c=$('#sigpad'); if(!c) return; const r=c.getBoundin
 
 /* ---------- read aloud ---------- */
 function pickVoice(code){ const vs=voicesFor(code); if(S.settings.voiceURI){ const v=vs.find(x=>x.voiceURI===S.settings.voiceURI); if(v) return v; } return vs[0]||null; }
-function speakItems(items,code){
-  if(!('speechSynthesis' in window)) return toast(t('o_noTts'));
-  speechSynthesis.cancel(); const v=pickVoice(code); if(!v&&code!=='en') toast(t('o_noVoiceTry'));
-  let i=0; const tok=ui.tok=(ui.tok||0)+1;
-  const next=()=>{ if(tok!==ui.tok) return; if(i>=items.length){ ui.speaking=null; ui.keep=true; render(); return; }
-    const it=items[i]; ui.speaking=it.id; ui.keep=true; render(); const el=document.getElementById('cl-'+it.id); if(el) el.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
-    const parts=it.text.match(/[^.!?।]+[.!?।]*/g)||[it.text]; let j=0;
-    const sp=()=>{ if(tok!==ui.tok) return; if(j>=parts.length){ i++; return next(); } const u=new SpeechSynthesisUtterance(parts[j].trim()); u.lang=langOf(code).bcp; if(v) u.voice=v; u.rate=S.settings.rate; u.onend=()=>{ j++; sp(); }; u.onerror=()=>{ j++; sp(); }; speechSynthesis.speak(u); };
-    sp(); };
-  next();
-}
-function stopSpeak(quiet){ ui.tok=(ui.tok||0)+1; try{ speechSynthesis.cancel(); }catch(e){} ui.speaking=null; if(!quiet){ ui.keep=true; render(); } }
+/* ---------- read aloud ----------
+   Android app: the phone's own text-to-speech (Capacitor plugin), which has Indian voices.
+   Browsers: the Web Speech API, with fixes for its common stalls. */
+const ttsNative=()=>NP('TextToSpeech');
+const ttsWeb=()=>('speechSynthesis' in window&&window.speechSynthesis&&typeof window.SpeechSynthesisUtterance==='function')?window.speechSynthesis:null;
+const ttsOK=()=>!!(ttsNative()||ttsWeb());
+let VOICES_P=null;
+function waitVoices(){ const W=ttsWeb(); if(!W) return Promise.resolve([]); const v=W.getVoices(); if(v.length) return Promise.resolve(v);
+  return VOICES_P||(VOICES_P=new Promise(res=>{ let done=false; const f=()=>{ if(done) return; done=true; VOICES_P=null; res(W.getVoices()); }; try{ W.addEventListener('voiceschanged',f,{once:true}); }catch(e){} setTimeout(f,1500); })); }
+function splitParts(text){ const out=[]; (text.match(/[^.!?।|]+[.!?।|]*/g)||[text]).forEach(p=>{ p=p.trim(); while(p.length>200){ let k=p.lastIndexOf(',',200); if(k<60) k=p.lastIndexOf(' ',200); if(k<1) k=200; out.push(p.slice(0,k+1).trim()); p=p.slice(k+1).trim(); } if(p) out.push(p); }); return out; }
+const ttsRate=()=>Math.min(2,Math.max(0.5,+S.settings.rate||1));
+/* speak one short piece; resolves when it has been spoken (or failed) */
+function sayPart(text,code){ const bcp=langOf(code).bcp, N=ttsNative();
+  if(N) return N.speak({text,lang:bcp,rate:ttsRate(),pitch:1,volume:1,category:'playback'}).catch(e=>console.warn('tts',e));
+  const W=ttsWeb(); if(!W) return Promise.resolve();
+  return new Promise(res=>{ let done=false; const end=()=>{ if(done) return; done=true; clearTimeout(guard); res(); };
+    const u=new SpeechSynthesisUtterance(text); u.lang=bcp; const v=pickVoice(code); if(v) u.voice=v; u.rate=ttsRate(); u.onend=end; u.onerror=end;
+    const guard=setTimeout(end,Math.max(6000,text.length*160/ttsRate()));
+    if(W.paused) try{ W.resume(); }catch(e){} W.speak(u); }); }
+function ttsStop(){ const N=ttsNative(); if(N){ try{ N.stop(); }catch(e){} } const W=ttsWeb(); if(W){ try{ W.cancel(); }catch(e){} } }
+/* checks before speaking: an engine exists, and a voice for this language (warn, but try anyway) */
+async function ttsPrepare(code){
+  if(!ttsOK()){ toast(t(NATIVE()?'o_noTtsApp':'o_noTts')); return false; }
+  const N=ttsNative();
+  if(N){ try{ const r=await N.isLanguageSupported({lang:langOf(code).bcp}); if(r&&r.supported===false) toast(t('o_noVoiceTry')); }catch(e){} return true; }
+  ttsStop(); await waitVoices(); if(!pickVoice(code)&&code!=='en') toast(t('o_noVoiceTry'));
+  await new Promise(r=>setTimeout(r,80)); /* Chrome drops a speak() that comes right after cancel() */
+  return true; }
+async function speakItems(items,code){
+  const tok=ui.tok=(ui.tok||0)+1; if(!(await ttsPrepare(code))) return;
+  for(const it of items){ if(tok!==ui.tok) return; ui.speaking=it.id; ui.keep=true; render(); const el=document.getElementById('cl-'+it.id); if(el) el.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+    for(const part of splitParts(it.text)){ if(tok!==ui.tok) return; await sayPart(part,code); } }
+  if(tok===ui.tok){ ui.speaking=null; ui.keep=true; render(); } }
+function stopSpeak(quiet){ ui.tok=(ui.tok||0)+1; ttsStop(); ui.speaking=null; if(!quiet){ ui.keep=true; render(); } }
 /* read any block of the page aloud, highlighting each part as it is read */
 let READ=null;
-function readEl(btn){
+async function readEl(btn){
   if(READ&&READ.btn===btn){ stopRead(); return; } stopRead(); stopSpeak(true);
-  const root=document.getElementById(btn.dataset.target); if(!root) return; if(!('speechSynthesis' in window)) return toast(t('o_noTts'));
+  const root=document.getElementById(btn.dataset.target); if(!root) return;
   const code=btn.dataset.lang||S.settings.lang, sel=btn.dataset.sel||'h2,h3,p,li,tr';
   const items=[...root.querySelectorAll(sel)].map(e=>({e,text:(e.textContent||'').replace(/\s+/g,' ').trim()})).filter(x=>x.text);
-  const v=pickVoice(code); if(!v&&code!=='en') toast(t('o_noVoiceTry'));
-  const tok={}; READ={btn,tok}; setSayBtn(btn,true); try{ speechSynthesis.cancel(); }catch(e){}
-  let i=0; const next=()=>{ if(!READ||READ.tok!==tok) return; document.querySelectorAll('.reading').forEach(x=>x.classList.remove('reading')); if(i>=items.length) return stopRead();
-    const it=items[i++]; it.e.classList.add('reading'); try{ it.e.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(e){}
-    const parts=it.text.match(/[^.!?।]+[.!?।]*/g)||[it.text]; let j=0;
-    const sp=()=>{ if(!READ||READ.tok!==tok) return; if(j>=parts.length) return next(); const u=new SpeechSynthesisUtterance(parts[j++].trim()); u.lang=langOf(code).bcp; if(v) u.voice=v; u.rate=S.settings.rate; u.onend=sp; u.onerror=sp; speechSynthesis.speak(u); };
-    sp(); };
-  next();
-}
-function stopRead(){ if(!READ) return; const b=READ.btn; READ=null; try{ speechSynthesis.cancel(); }catch(e){} document.querySelectorAll('.reading').forEach(x=>x.classList.remove('reading')); setSayBtn(b,false); }
+  const tok={}; READ={btn,tok}; setSayBtn(btn,true);
+  if(!(await ttsPrepare(code))){ stopRead(); return; }
+  const live=()=>READ&&READ.tok===tok;
+  for(const it of items){ if(!live()) return; document.querySelectorAll('.reading').forEach(x=>x.classList.remove('reading')); it.e.classList.add('reading');
+    try{ it.e.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}); }catch(e){}
+    for(const part of splitParts(it.text)){ if(!live()) return; await sayPart(part,code); } }
+  if(live()) stopRead(); }
+function stopRead(){ if(!READ) return; const b=READ.btn; READ=null; ttsStop(); document.querySelectorAll('.reading').forEach(x=>x.classList.remove('reading')); setSayBtn(b,false); }
 function setSayBtn(b,on){ if(!b) return; b.classList.toggle('on',on); const sp=b.querySelector('span'); if(sp) sp.textContent=t(on?'stop':(b.dataset.label||'readAloud')); }
 const sayBtn=(target,o)=>{ o=o||{}; return `<button class="btn sec sm say" data-act="readEl" data-target="${target}" ${o.lang?`data-lang="${o.lang}"`:''} ${o.sel?`data-sel="${o.sel}"`:''} ${o.label?`data-label="${o.label}"`:''}>${ic('speaker',16)} <span>${esc(t(o.label||'readAloud'))}</span></button>`; };
 function speakDoc(){ const d=deal(); speakItems(currentClauses(d).map((c,i)=>({id:c.id,text:`${i+1}. ${t('h_'+c.id)}. ${tx(c.text)} ${c.open?t('toSettle')+': '+tx(c.open):''}`})),S.settings.lang); }
@@ -1923,9 +1946,10 @@ document.addEventListener('click',async e=>{
     case 'addAny': if(ui.view==='deal'&&d){ ui.inp=null; addEvidenceSheet(); } else pickDealSheet(); break;
     case 'pickDeal': ui.dealId=a.dataset.id; ui.view='deal'; ui.tab='evidence'; render(); ui.inp=null; addEvidenceSheet(); break;
     case 'newDeal': newDealSheet(); break;
-    case 'ndRole': $('#ndRole').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===a)); break;
+    case 'ndRole': $('#ndRole').querySelectorAll('button').forEach(b=>{ b.setAttribute('aria-checked',b===a); b.classList.toggle('on',b===a); }); break;
     case 'createDeal': { const title=$('#ndTitle').value.trim(), name=$('#ndName').value.trim(), org=$('#ndOrg').value.trim(); if(!title||!name) return toast(t('e_deal'));
-      const role=($('#ndRole [aria-pressed="true"]')||{dataset:{}}).dataset.v||'Seller', id='D-'+Date.now().toString(36).slice(-4).toUpperCase();
+      const pick=$('#ndRole [aria-checked="true"]'); if(!pick){ toast(t('sidePick')); const r=$('#ndRole'); if(r){ r.classList.add('shake'); setTimeout(()=>r.classList.remove('shake'),500); } return; }
+      const role=pick.dataset.v, id='D-'+Date.now().toString(36).slice(-4).toUpperCase();
       const nd=newDealObj(id,title,nowISO(),[{id:'me',name:S.settings.userName,org:S.settings.business,role},{id:'cp',name,org:org||name,role:role==='Seller'?'Buyer':'Seller'}]); nd.terms=fillMissing({});
       S.deals.unshift(nd); save(); ui.dealId=id; ui.view='deal'; ui.tab='evidence'; render(); ui.inp=null; addEvidenceSheet(); break; }
     case 'addEvidence': ui.inp=null; addEvidenceSheet(); break;
@@ -2045,7 +2069,7 @@ document.addEventListener('click',async e=>{
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(A.email)) return toast(t('needEmail'));
       if(A.mode==='signup'){ if(!A.name.trim()) return toast(t('needName')); if(A.mobile&&!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName')); if(A.role==='lawyer'&&!A.enrol.trim()) return toast(t('needEnrol')); if(!A.terms) return toast(t('needTerms')); }
       A.busy=true; render(); let error=null;
-      try{ ({error}=await SB.auth.signInWithOtp({email:A.email,options:{shouldCreateUser:A.mode==='signup',data:A.mode==='signup'?{name:A.name.trim(),role:A.role,business:A.business.trim()}:undefined}})); }catch(err){ error=err; }
+      try{ ({error}=await SB.auth.signInWithOtp({email:A.email,options:{shouldCreateUser:A.mode==='signup',data:A.mode==='signup'?{name:A.name.trim(),role:A.role==='lawyer'?'lawyer':'user',business:A.business.trim()}:undefined}})); }catch(err){ error=err; }
       A.busy=false; if(error){ render(); return toast(A.mode==='login'&&/signup|not found|not allowed/i.test(String(error.message||''))?t('noAccountEmail'):t('codeSendFail')); }
       A.step='otp'; A.otp=''; render(); const o=document.querySelector('.otp'); if(o) o.focus(); break; }
       { const A=ui.auth; A.mobile=A.mobile.replace(/\D/g,''); if(!/^[6-9]\d{9}$/.test(A.mobile)) return toast(t('needName'));
@@ -2059,7 +2083,7 @@ document.addEventListener('click',async e=>{
       try{ await loadCloud(res.data.user); }catch(err){ A.busy=false; cloud.uid=null; render(); return toast(t('cloudLoadFail')); }
       ui.demoBack=null; afterLogin(); break; }
       { const A=ui.auth; if(!/^\d{6}$/.test(A.otp)) return toast(t('needOtp'));
-      if(A.mode==='signup'){ const id='u_'+A.name.trim().toLowerCase().replace(/[^a-z]/g,'').slice(0,8)+'_'+Date.now().toString(36).slice(-4); S.accounts[id]={id,name:A.name.trim(),mobile:A.mobile,role:A.role,business:A.role==='lawyer'?'':A.business.trim(),train:!!A.train,tutDone:false,created:nowISO()}; if(A.role==='lawyer') Object.assign(S.accounts[id],{lawyerId:'lw_'+id,enrol:A.enrol.trim(),bar:A.bar,fee:+A.fee||0}); useAccount(id); if(A.role!=='lawyer'){ cloneTemplate(1,id); cloneTemplate(0,id); } }
+      if(A.mode==='signup'){ const id='u_'+A.name.trim().toLowerCase().replace(/[^a-z]/g,'').slice(0,8)+'_'+Date.now().toString(36).slice(-4); S.accounts[id]={id,name:A.name.trim(),mobile:A.mobile,role:A.role==='lawyer'?'lawyer':'user',business:A.role==='lawyer'?'':A.business.trim(),train:!!A.train,tutDone:false,created:nowISO()}; if(A.role==='lawyer') Object.assign(S.accounts[id],{lawyerId:'lw_'+id,enrol:A.enrol.trim(),bar:A.bar,fee:+A.fee||0}); useAccount(id); if(A.role!=='lawyer'){ cloneTemplate(1,id); cloneTemplate(0,id); } }
       else { const ac=Object.values(S.accounts).find(x=>x.mobile===A.mobile); if(!ac) return toast(t('noAccountPhone')); useAccount(ac.id); }
       afterLogin(); break; }
     case 'demoLogin': useAccount(a.dataset.id); ui.demoBack=null; afterLogin(); break;
