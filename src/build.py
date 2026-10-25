@@ -7,6 +7,9 @@ FONTS='<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="s
 css=open(B+'style.css').read()
 SRC=['i18n.js','i18n2.js','i18n3.js','i18n4.js','i18n5.js','i18n6.js','i18n7.js','seed_tr.js','audio.js','app.js']
 js=''.join(open(B+f).read()+'\n' for f in SRC)
+# version stamp: same for the same sources; the app compares it with version.json to pick up updates
+BUILD=hashlib.sha256((open(B+'style.css').read()+js).encode()).hexdigest()[:8]
+js=js.replace('__DRAFTIT_BUILD__',BUILD)
 BODY='''<div class="app" id="app"></div>
 <div id="sheetWrap" hidden><div class="scrim" data-act="closeSheet"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div id="toast" role="status" hidden></div>
@@ -76,6 +79,7 @@ self.addEventListener('fetch',e=>{
 if not os.path.exists(OUT+'config.js'):
     open(OUT+'config.js','w').write("/* DraftIt online storage. Paste your Supabase Project URL and anon public key (Supabase: Project Settings > API).\n   The anon key is safe to publish: row-level security in supabase/schema.sql keeps each account's data private. */\nwindow.DRAFTIT_CONFIG = {\n  supabaseUrl: '',\n  supabaseAnonKey: ''\n};\n")
 open(OUT+'.nojekyll','w').write('')
+open(OUT+'version.json','w').write(json.dumps({'v':BUILD}))
 os.makedirs(OUT+'src',exist_ok=True)
 if not IN_REPO:
     for f in SRC+['style.css','build.py']: shutil.copy(B+f,OUT+'src/'+f)

@@ -1460,6 +1460,12 @@ langAndSize:["Language and text size","भाषा और अक्षरों
 });
 
 Object.assign(I18N,{
+ttsCheck:["Read aloud check","पढ़कर सुनाने की जांच","वाचून दाखवण्याची तपासणी","చదివి వినిపించే తనిఖీ","வாசித்துக் காட்டும் சோதனை","ಓದಿ ಹೇಳುವ ಪರಿಶೀಲನೆ"],
+ttsPhone:["Phone voice","फ़ोन की आवाज़","फोनचा आवाज","ఫోన్ వాయిస్","போன் குரல்","ಫೋನ್ ಧ್ವನಿ"],
+ttsBrowser:["Browser voice","ब्राउज़र की आवाज़","ब्राउझरचा आवाज","బ్రౌజర్ వాయిస్","உலாவி குரல்","ಬ್ರೌಸರ್ ಧ್ವನಿ"],
+ttsNone:["No voice found","कोई आवाज़ नहीं मिली","आवाज सापडला नाही","వాయిస్ దొరకలేదు","குரல் கிடைக்கவில்லை","ಧ್ವನಿ ಸಿಗಲಿಲ್ಲ"],
+ttsTry:["Test the voice","आवाज़ जांचें","आवाज तपासा","వాయిస్ పరీక్షించండి","குரலைச் சோதி","ಧ್ವನಿ ಪರೀಕ್ಷಿಸಿ"],
+ttsReload:["Load latest version","नया वर्ज़न लोड करें","नवीन आवृत्ती लोड करा","తాజా వెర్షన్ లోడ్ చేయండి","சமீபத்திய பதிப்பை ஏற்று","ಹೊಸ ಆವೃತ್ತಿ ಲೋಡ್ ಮಾಡಿ"],
 demoSeller:["Ravi · business user, with sample deals","रवि · व्यापारी उपयोगकर्ता, सैंपल डील के साथ","रवी · व्यावसायिक वापरकर्ता, नमुना व्यवहारांसह","రవి · వ్యాపార వినియోగదారు, నమూనా డీల్స్‌తో","ரவி · வணிகப் பயனர், மாதிரி ஒப்பந்தங்களுடன்","ರವಿ · ವ್ಯಾಪಾರ ಬಳಕೆದಾರ, ಮಾದರಿ ಡೀಲ್‌ಗಳೊಂದಿಗೆ"],
 role_user:["User","उपयोगकर्ता","वापरकर्ता","వినియోగదారు","பயனர்","ಬಳಕೆದಾರ"],
 roleUserSub:["I buy or sell. I choose my side in each deal.","मैं खरीदता या बेचता हूं। हर डील में अपनी भूमिका चुनता हूं।","मी खरेदी किंवा विक्री करतो. प्रत्येक व्यवहारात माझी बाजू निवडतो.","నేను కొంటాను లేదా అమ్ముతాను. ప్రతి డీల్‌లో నా పాత్ర ఎంచుకుంటాను.","நான் வாங்குவேன் அல்லது விற்பேன். ஒவ்வொரு ஒப்பந்தத்திலும் என் பக்கத்தைத் தேர்வு செய்வேன்.","ನಾನು ಖರೀದಿಸುತ್ತೇನೆ ಅಥವಾ ಮಾರುತ್ತೇನೆ. ಪ್ರತಿ ಡೀಲ್‌ನಲ್ಲಿ ನನ್ನ ಪಾತ್ರ ಆರಿಸುತ್ತೇನೆ."],
@@ -1707,6 +1713,13 @@ const partyName=(d,id)=>(d.parties.find(p=>p.id===id)||{}).name||id;
 
 let SAMPLE=null, DOWNLOADS=null, ROOMCAP=null, capChecked=false;
 const STANDALONE=!(window.claude&&typeof window.claude.use==='function');
+const BUILD='ec250e75';
+/* phones and the Android app can keep an old copy of the page; reload once when a newer version is online */
+async function checkForUpdate(){ if(!STANDALONE||!/^https?:/.test(location.protocol)) return;
+  try{ const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'}); if(!r.ok) return; const {v}=await r.json(); if(!v||v===BUILD) return;
+    let last=''; try{ last=sessionStorage.getItem('draftit.upd')||''; }catch(e){} if(last===v) return; try{ sessionStorage.setItem('draftit.upd',v); }catch(e){}
+    const u=new URL(location.href); u.searchParams.set('v',v); location.replace(u.toString()); }catch(e){} }
+window.addEventListener('load',()=>{ checkForUpdate(); }); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) checkForUpdate(); });
 function apiKey(){ try{ return localStorage.getItem('draftit.key')||''; }catch(e){ return ''; } }
 const blobToB64=b=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(b); });
 /* outside Claude, an Anthropic API key (kept only in this browser) powers the same features */
@@ -2578,7 +2591,7 @@ function renderSettings(){
   return `<section class="card pad stack"><div class="row between"><b>${esc(t('account'))}</b><span class="chip c-navy">${esc(t(a.role==='lawyer'?'role_lawyer':'role_user'))}</span></div><label class="field">${esc(t('yourName'))}<input class="inp" id="setName" value="${esc(s.userName)}" data-change="setName"></label>${a.role==='lawyer'?'':`<label class="field">${esc(t('business'))}<input class="inp" id="setBiz" value="${esc(s.business)}" data-change="setBiz"></label>`}${cloud.uid&&a.id===cloud.uid?`<p class="tiny">${esc(t('signedInAs',{email:cloud.email}))} ${cloudBadge()}</p>`:''}<p class="tiny">${a.mobile?`${esc(t('mobile'))}: <span class="mono">+91 ${esc(a.mobile.slice(0,2))}xxxxxx${esc(a.mobile.slice(-2))}</span> · `:''}${esc(t('userIdNote'))} <span class="mono">${esc(s.userId)}</span></p>${STANDALONE&&!SB?`<div class="note small">${esc(t('cloudNotSet'))}</div>`:''}<div class="row wrap"><button class="btn sec sm" data-act="tutorial">${esc(t('tutTitle'))}</button></div><button class="btn danger full" data-act="logoutAsk">${ic('logout',18)} ${esc(t('logOut'))}</button></section>
   <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
   <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}${layoutSeg()}</section>${a.role==='lawyer'?'':`<section class="card pad row between" style="gap:12px"><span class="stack-s" style="gap:2px"><b>${esc(t('snipTool'))}</b><span class="tiny">${esc(t('snipSub'))}</span></span><button class="btn ${s.snip?'sec':''} sm" data-act="snipToggle">${esc(t(s.snip?'snipRemove':'snipAdd'))}</button></section>`}
-  <section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
+  ${ttsCheckCard()}<section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
   <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${aiViaServer()?`<div class="note ok small">${esc(t('aiServerOn'))}</div>`:''}${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
   ${getAppCard()}${STANDALONE&&!isInstalled()&&!NATIVE()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
   <details class="card legal"><summary>${esc(t('legalNotes'))}</summary><div class="in"><p>${esc(t('legal1'))}</p><p>${esc(t('legal2'))}</p><p>${esc(t('legal3'))}</p><p>${esc(t('legal4'))}</p><p>${esc(t('legal5'))}</p></div></details>
@@ -3480,6 +3493,10 @@ function sayPart(text,code){ const bcp=langOf(code).bcp, N=ttsNative();
     const u=new SpeechSynthesisUtterance(text); u.lang=bcp; const v=pickVoice(code); if(v) u.voice=v; u.rate=ttsRate(); u.onend=end; u.onerror=end;
     const guard=setTimeout(end,Math.max(6000,text.length*160/ttsRate()));
     if(W.paused) try{ W.resume(); }catch(e){} W.speak(u); }); }
+function ttsInfo(){ const C=window.Capacitor, N=ttsNative(), W=ttsWeb();
+  const hdr=C&&Array.isArray(C.PluginHeaders)?C.PluginHeaders.map(h=>h&&h.name).filter(Boolean):null;
+  return {engine:N?'phone':W?'browser':'none',app:NATIVE(),bridge:!!(C&&typeof C.nativePromise==='function'),plugins:hdr?hdr.length:'-',tts:hdr?hdr.includes('TextToSpeech'):'-',webVoices:W?W.getVoices().length:0}; }
+const ttsCheckCard=()=>{ const i=ttsInfo(); return `<section class="card pad stack-s"><div class="row between"><b>${esc(t('ttsCheck'))}</b><span class="chip ${i.engine==='none'?'c-bad':'c-ok'}">${esc(t(i.engine==='phone'?'ttsPhone':i.engine==='browser'?'ttsBrowser':'ttsNone'))}</span></div><p class="tiny mono">build ${BUILD} · app ${i.app?'yes':'no'} · bridge ${i.bridge?'yes':'no'} · plugins ${i.plugins} · TextToSpeech ${i.tts} · web voices ${i.webVoices}</p><div class="row wrap"><button class="btn sec sm" data-act="testVoice">${ic('speaker',16)} ${esc(t('ttsTry'))}</button><button class="btn sec sm" data-act="reloadApp">${esc(t('ttsReload'))}</button></div></section>`; };
 function ttsStop(){ const N=ttsNative(); if(N){ try{ N.stop(); }catch(e){} } const W=ttsWeb(); if(W){ try{ W.cancel(); }catch(e){} } }
 /* checks before speaking: an engine exists, and a voice for this language (warn, but try anyway) */
 async function ttsPrepare(code){
@@ -3716,6 +3733,7 @@ document.addEventListener('click',async e=>{
     case 'stopSpeak': stopSpeak(); break;
     case 'calNav': { const [y,m]=ui.calMonth.split('-').map(Number); ui.calMonth=new Date(Date.UTC(y,m-1+(+a.dataset.v),1)).toISOString().slice(0,7); ui.calDay=null; render(); break; }
     case 'calDay': ui.calDay=ui.calDay===a.dataset.v?null:a.dataset.v; ui.calMonth=a.dataset.v.slice(0,7); ui.keep=true; render(); break;
+    case 'reloadApp': { const u=new URL(location.href); u.searchParams.set('v',Date.now().toString(36)); location.replace(u.toString()); break; }
     case 'testVoice': speakItems([{id:'test',text:t('testSentence')}],S.settings.lang); break;
     case 'reset': if(a.dataset.sure){ try{ localStorage.removeItem(STORE); }catch(err){} const keep=S; S=null; render(); S=keep; await seedState(); ui.view='auth'; ui.auth=null; ui.demoBack=null; render(); toast(t('o_reset')); } else { a.dataset.sure='1'; a.textContent=t('resetSure'); } break;
   }
