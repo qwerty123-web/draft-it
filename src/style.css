@@ -551,3 +551,10 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
 .ocr-key{display:inline-block;width:1.75rem;height:.75rem;flex:none;border-bottom:3px solid #0B2E63;background:rgba(47,111,219,.22)}
 .msg.used .txt{text-decoration:underline;text-decoration-color:#0B2E63;text-decoration-thickness:2px;text-underline-offset:4px}
 .msg.used .n{background:var(--brand);color:#FFFFFF;border-radius:6px;padding:0 .3rem}
+
+/* evidence rows with a delete button on the right */
+.rec-li{display:flex;align-items:stretch}
+.rec-li>.tap{flex:1;min-width:0}
+.rec-del{flex:none;width:3.5rem;border:0;border-left:1px solid var(--line-2);background:none;color:var(--red);display:grid;place-items:center;cursor:pointer}
+.rec-del:hover{background:var(--red-t)}
+.rec-del:focus-visible{outline-offset:-3px}
