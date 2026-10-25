@@ -562,3 +562,7 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
 .rec-del svg{width:1.5rem;height:1.5rem}
 .rec-del:hover{background:#F9D5D0;border-color:var(--red)}
 .rec-del:focus-visible{outline-offset:-3px}
+
+.get-app{display:flex;align-items:center;gap:.875rem;text-decoration:none;color:var(--ink);background:var(--navy-t);border-color:transparent}
+.get-app:hover{background:#DDE6F5}
+.file-missing{opacity:.5}

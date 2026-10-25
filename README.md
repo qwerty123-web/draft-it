@@ -27,7 +27,9 @@ Built for Srujana Tech Fest 2026, Legal Services theme, problem LS-06 “From Ha
 
 ## Use it on your phone or computer
 
-The live link works in any modern browser. To install it like an app:
+**Android app:** [download DraftIt.apk](https://github.com/qwerty123-web/draft-it/releases/download/android-latest/DraftIt.apk), open it, and allow installing from your browser when Android asks. GitHub builds a fresh APK automatically (see [`android-app/`](android-app/)). The app opens the live site, so it always has the latest features.
+
+The live link also works in any modern browser. To install it from the browser:
 
 - **Android (Chrome):** open the link, tap the menu (⋮), then **Install app** or **Add to Home screen**.
 - **iPhone or iPad (Safari):** open the link, tap **Share**, then **Add to Home Screen**.
@@ -41,12 +43,25 @@ DraftIt runs online. With online storage switched on (below), every account's de
 
 Without a key, DraftIt reads chats with simple rules on the device. For full chat reading, translation of new content, photo reading and agreement comparison, open **Settings → Claude AI**, paste an Anthropic API key and tap **Save key**. The key is stored only in your browser and is sent only to `api.anthropic.com`.
 
-## Switch on online accounts and storage (Supabase, free)
+## Online accounts, storage and AI (Supabase, free)
 
-DraftIt stores accounts and data in [Supabase](https://supabase.com), a hosted Postgres database with email login. Each account can only read and write its own data (row-level security). Live deal chat between two phones also runs through Supabase Realtime.
+Everything a signed-in account does is stored in [Supabase](https://supabase.com):
 
-1. **Create a project.** Sign up at supabase.com, click **New project**, give it a name (for example `draft-it`), set a database password, and pick the region **South Asia (Mumbai)** so data stays in India. Wait about two minutes for it to start.
-2. **Create the table.** Open **SQL Editor → New query**, paste the whole of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
+| What | Where in Supabase | Rule |
+| --- | --- | --- |
+| Profile and settings | table `profiles` | only that account |
+| Deals (parties, terms, draft, chat, dates) | table `deals` | only that account |
+| Evidence (chats, transcripts, fingerprints) | table `evidence` | add or delete only: **no edits** |
+| Locked agreement versions | table `versions` | hash and contents can never change |
+| Signatures | table `signatures` | add only: **never edited or deleted** |
+| Original files (voice notes, snips, photos, PDFs) | private Storage bucket `evidence` | only that account; files cannot be overwritten |
+| Claude AI | Edge Function `claude` | signed-in accounts only; the API key stays on the server |
+| Live deal chat | Realtime | |
+
+### Setup (about 10 minutes)
+
+1. **Create a project.** Sign up at supabase.com, click **New project**, pick the region **South Asia (Mumbai)**, and wait for it to start.
+2. **Create the tables, storage and rules.** Open **SQL Editor → New query**, paste the whole of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**. It is safe to run again after updates; existing accounts move over automatically.
 3. **Send login codes by email.** Open **Authentication → Emails → Templates**. In both **Magic Link** and **Confirm signup**, replace the body with:
 
    ```html
@@ -55,22 +70,16 @@ DraftIt stores accounts and data in [Supabase](https://supabase.com), a hosted P
    <p>It works once and expires in an hour.</p>
    ```
 
-4. **Set the site address.** Open **Authentication → URL Configuration** and set **Site URL** to your app's link, for example `https://qwerty123-web.github.io/draft-it/`.
-5. **Copy two keys.** Open **Project Settings → API** and copy the **Project URL** and the **anon public** key.
-6. **Paste them into `config.js`** in this repository:
+4. **Set the site address.** **Authentication → URL Configuration → Site URL**: `https://qwerty123-web.github.io/draft-it/`.
+5. **Turn on Claude for everyone (no key in the browser).**
+   - **Edge Functions → Deploy a new function → Via editor**, name it `claude`, paste [`supabase/functions/claude/index.ts`](supabase/functions/claude/index.ts), click **Deploy**.
+   - **Edge Functions → Secrets → Add new secret**: name `ANTHROPIC_API_KEY`, value your key from console.anthropic.com.
+   - Signed-in users now get chat reading, translation, photo reading and comparison automatically. Usage is billed to that key.
+6. **Copy two keys into `config.js`** (Project Settings → API: **Project URL** and **anon public** key). Never put the **service_role** key in this file.
 
-   ```js
-   window.DRAFTIT_CONFIG = {
-     supabaseUrl: 'https://YOUR-PROJECT.supabase.co',
-     supabaseAnonKey: 'YOUR-ANON-PUBLIC-KEY'
-   };
-   ```
+Supabase's built-in email sender allows only a few login emails per hour. For real users, add your own SMTP sender under **Authentication → Emails → SMTP Settings**.
 
-   Commit the change. The anon key is designed to be public; the security rules from step 2 keep each account private. Never put the **service_role** key in this file.
-
-Supabase's built-in email sender allows only a few login emails per hour. For a public launch, add your own SMTP sender under **Authentication → Emails → SMTP Settings** (Brevo, Resend and Amazon SES all have free tiers).
-
-Until `config.js` has keys, DraftIt still runs, but data stays in the browser of each device and the demo accounts are the main way in.
+Until `config.js` has keys, DraftIt still runs, but data stays in the browser of each device.
 
 ## Host your own copy
 
@@ -112,7 +121,10 @@ The page is built from the files in `src/`:
 | `src/seed_tr.js` | Translations of the sample deal content |
 | `src/audio.js` | The sample voice notes |
 | `config.js` | Your Supabase project URL and anon key |
-| `supabase/schema.sql` | Database table, security rules and account deletion |
+| `supabase/schema.sql` | Tables, storage bucket, security rules and account deletion |
+| `supabase/functions/claude/index.ts` | Edge Function that calls Claude with the server-side key |
+| `android-app/` | Android app (Capacitor) and its launcher icons |
+| `.github/workflows/android.yml` | Builds `DraftIt.apk` on GitHub and attaches it to the `android-latest` release |
 | `vendor/supabase.js` | Supabase browser library (v2.45.4, MIT licence) |
 
 After editing, rebuild `index.html`:

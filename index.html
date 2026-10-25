@@ -579,6 +579,10 @@ html.lay-phone .app,html.lay-phone .nav-in,html.lay-phone .sheet{max-width:600px
 .rec-del svg{width:1.5rem;height:1.5rem}
 .rec-del:hover{background:#F9D5D0;border-color:var(--red)}
 .rec-del:focus-visible{outline-offset:-3px}
+
+.get-app{display:flex;align-items:center;gap:.875rem;text-decoration:none;color:var(--ink);background:var(--navy-t);border-color:transparent}
+.get-app:hover{background:#DDE6F5}
+.file-missing{opacity:.5}
 </style>
 </head>
 <body>
@@ -1421,6 +1425,13 @@ langAndSize:["Language and text size","भाषा और अक्षरों
 });
 
 Object.assign(I18N,{
+uploadingOriginal:["Saving the original file online…","मूल फ़ाइल ऑनलाइन सेव हो रही है…","मूळ फाइल ऑनलाइन सेव्ह होत आहे…","అసలు ఫైల్ ఆన్‌లైన్‌లో సేవ్ అవుతోంది…","மூலக் கோப்பு ஆன்லைனில் சேமிக்கப்படுகிறது…","ಮೂಲ ಫೈಲ್ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗುತ್ತಿದೆ…"],
+uploadFail:["Could not save the original file online. Its fingerprint is still kept.","मूल फ़ाइल ऑनलाइन सेव नहीं हो सकी। उसका फ़िंगरप्रिंट फिर भी रखा गया है।","मूळ फाइल ऑनलाइन सेव्ह झाली नाही. तिचा फिंगरप्रिंट तरीही ठेवला आहे.","అసలు ఫైల్‌ను ఆన్‌లైన్‌లో సేవ్ చేయలేకపోయాం. దాని ఫింగర్‌ప్రింట్ మాత్రం ఉంచాం.","மூலக் கோப்பை ஆன்லைனில் சேமிக்க முடியவில்லை. அதன் கைரேகை இன்னும் வைக்கப்பட்டுள்ளது.","ಮೂಲ ಫೈಲ್ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಅದರ ಫಿಂಗರ್‌ಪ್ರಿಂಟ್ ಉಳಿದಿದೆ."],
+openOriginal:["Open original file","मूल फ़ाइल खोलें","मूळ फाइल उघडा","అసలు ఫైల్ తెరవండి","மூலக் கோப்பைத் திற","ಮೂಲ ಫೈಲ್ ತೆರೆಯಿರಿ"],
+storedOnline:["Original file stored privately online.","मूल फ़ाइल ऑनलाइन निजी रूप से रखी है।","मूळ फाइल ऑनलाइन खाजगीरित्या ठेवली आहे.","అసలు ఫైల్ ఆన్‌లైన్‌లో ప్రైవేట్‌గా ఉంచబడింది.","மூலக் கோப்பு ஆன்லைனில் தனிப்பட்ட முறையில் சேமிக்கப்பட்டுள்ளது.","ಮೂಲ ಫೈಲ್ ಆನ್‌ಲೈನ್‌ನಲ್ಲಿ ಖಾಸಗಿಯಾಗಿ ಇರಿಸಲಾಗಿದೆ."],
+aiServerOn:["Claude AI is on through DraftIt’s server. No key needed.","Claude AI, DraftIt के सर्वर से चालू है। कोई की नहीं चाहिए।","Claude AI, DraftIt च्या सर्व्हरमधून सुरू आहे. की लागत नाही.","Claude AI, DraftIt సర్వర్ ద్వారా ఆన్‌లో ఉంది. కీ అవసరం లేదు.","Claude AI, DraftIt சேவையகம் வழியாக இயக்கத்தில் உள்ளது. விசை தேவையில்லை.","Claude AI, DraftIt ಸರ್ವರ್ ಮೂಲಕ ಆನ್ ಆಗಿದೆ. ಕೀ ಬೇಕಿಲ್ಲ."],
+getApp:["Get the Android app","Android ऐप डाउनलोड करें","Android ॲप डाउनलोड करा","Android యాప్ పొందండి","Android செயலியைப் பெறுக","Android ಆ್ಯಪ್ ಪಡೆಯಿರಿ"],
+getAppSub:["Download DraftIt.apk, open it, and allow installing when Android asks.","DraftIt.apk डाउनलोड करें, खोलें, और Android पूछे तो इंस्टॉल की अनुमति दें।","DraftIt.apk डाउनलोड करा, उघडा, आणि Android विचारल्यावर इन्स्टॉलला परवानगी द्या.","DraftIt.apk డౌన్‌లోడ్ చేసి తెరవండి, Android అడిగితే ఇన్‌స్టాల్‌కు అనుమతించండి.","DraftIt.apk-ஐப் பதிவிறக்கித் திறந்து, Android கேட்கும்போது நிறுவ அனுமதியுங்கள்.","DraftIt.apk ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ ತೆರೆಯಿರಿ, Android ಕೇಳಿದಾಗ ಇನ್‌ಸ್ಟಾಲ್‌ಗೆ ಅನುಮತಿಸಿ."],
 delEvidence:["Delete evidence","सबूत हटाएं","पुरावा हटवा","సాక్ష్యం తొలగించండి","சான்றை நீக்கு","ಸಾಕ್ಷ್ಯ ಅಳಿಸಿ"],
 delEvidenceQ:["Delete this evidence?","यह सबूत हटाएं?","हा पुरावा हटवायचा?","ఈ సాక్ష్యాన్ని తొలగించాలా?","இந்தச் சான்றை நீக்கவா?","ಈ ಸಾಕ್ಷ್ಯ ಅಳಿಸಬೇಕೆ?"],
 delEvidenceB:["It is removed from this deal with its messages. DraftIt then reads the deal again without it. This cannot be undone.","यह अपने मैसेज के साथ इस डील से हट जाएगा। फिर DraftIt इसके बिना डील दोबारा पढ़ेगा। इसे वापस नहीं लाया जा सकता।","तो त्याच्या संदेशांसह या व्यवहारातून काढला जाईल. मग DraftIt त्याशिवाय व्यवहार पुन्हा वाचेल. हे परत आणता येणार नाही.","ఇది దాని మెసేజ్‌లతో ఈ డీల్ నుంచి తొలగుతుంది. తర్వాత DraftIt అది లేకుండా డీల్‌ను మళ్లీ చదువుతుంది. దీన్ని వెనక్కి తేలేరు.","இது அதன் செய்திகளுடன் இந்த ஒப்பந்தத்திலிருந்து நீக்கப்படும். பிறகு DraftIt அது இல்லாமல் ஒப்பந்தத்தை மீண்டும் படிக்கும். இதைத் திரும்பப் பெற முடியாது.","ಇದು ತನ್ನ ಸಂದೇಶಗಳೊಂದಿಗೆ ಈ ಡೀಲ್‌ನಿಂದ ತೆಗೆಯಲ್ಪಡುತ್ತದೆ. ನಂತರ DraftIt ಅದಿಲ್ಲದೆ ಡೀಲ್ ಅನ್ನು ಮತ್ತೆ ಓದುತ್ತದೆ. ಇದನ್ನು ಹಿಂಪಡೆಯಲಾಗದು."],
@@ -1656,16 +1667,30 @@ const STANDALONE=!(window.claude&&typeof window.claude.use==='function');
 function apiKey(){ try{ return localStorage.getItem('draftit.key')||''; }catch(e){ return ''; } }
 const blobToB64=b=>new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]); fr.onerror=()=>rej(fr.error); fr.readAsDataURL(b); });
 /* outside Claude, an Anthropic API key (kept only in this browser) powers the same features */
-function makeApiSample(key){
+/* one wrapper for every way of reaching Claude: send(body) returns the Messages API reply */
+function makeSample(send){
   const call=async(input,opts)=>{ opts=opts||{}; const msgs=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:m.content}));
     if(opts.images&&opts.images.length){ const last=msgs[msgs.length-1], parts=[]; for(const b of opts.images) parts.push({type:'image',source:{type:'base64',media_type:b.type||'image/jpeg',data:await blobToB64(b)}}); parts.push({type:'text',text:last.content}); last.content=parts; }
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:opts.modelTier==='quick'?'claude-haiku-5-5':'claude-sonnet-5-5',max_tokens:8000,messages:msgs})});
-    if(!r.ok){ const err=new Error('api '+r.status); err.code=r.status===401||r.status===403?'not_granted':r.status===429?'rate_limited':'upstream_error'; throw err; }
-    const j=await r.json(); return {text:(j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join(''),truncated:j.stop_reason==='max_tokens'}; };
+    const j=await send({messages:msgs,tier:opts.modelTier==='quick'?'quick':'default'});
+    return {text:(j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join(''),truncated:j.stop_reason==='max_tokens'}; };
   call.json=async(input,opts)=>{ const {text}=await call(String(input)+'\n\nReply with valid JSON only: no prose, no code fences.',opts); const m=text.match(/[\[{][\s\S]*[\]}]/); return JSON.parse(m?m[0]:text); };
   return call;
 }
-function downloadBlob(name,data,type){ const b=data instanceof Blob?data:new Blob([data],{type:type||(/\.json$/.test(name)?'application/json':'text/html')+';charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); }
+/* outside Claude, an Anthropic API key (kept only in this browser) powers the same features */
+function makeApiSample(key){
+  return makeSample(async body=>{ const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:body.tier==='quick'?'claude-haiku-5-5':'claude-sonnet-5-5',max_tokens:8000,messages:body.messages})});
+    if(!r.ok){ const err=new Error('api '+r.status); err.code=r.status===401||r.status===403?'not_granted':r.status===429?'rate_limited':'upstream_error'; throw err; }
+    return r.json(); });
+}
+/* inside the DraftIt Android app (Capacitor) */
+const NATIVE=()=>{ try{ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()); }catch(e){ return false; } };
+const NP=n=>NATIVE()&&window.Capacitor.Plugins?window.Capacitor.Plugins[n]:null;
+const APK_URL='https://github.com/qwerty123-web/draft-it/releases/download/android-latest/DraftIt.apk';
+const isAndroid=()=>/android/i.test(navigator.userAgent);
+const getAppCard=()=>NATIVE()||!STANDALONE||isIOS()?'':`<a class="card pad tap get-app" href="${APK_URL}" rel="noopener"><span class="snip-ico">${ic('down',22)}</span><span class="stack-s grow" style="gap:2px;text-align:left"><b>${esc(t('getApp'))}</b><span class="tiny">${esc(t('getAppSub'))}</span></span></a>`;
+async function nativeSave(name,b){ const FS=NP('Filesystem'), SH=NP('Share'); if(!FS) return false;
+  try{ const r=await FS.writeFile({path:safeName(name),data:await blobToB64(b),directory:'CACHE'}); if(SH) await SH.share({title:name,dialogTitle:name,files:[r.uri]}); return true; }catch(e){ console.warn('save',e); return false; } }
+function downloadBlob(name,data,type){ if(NATIVE()&&NP('Filesystem')){ const nb=data instanceof Blob?data:new Blob([data],{type:type||(/\.json$/.test(name)?'application/json':'text/html')+';charset=utf-8'}); nativeSave(name,nb).then(ok=>{ if(!ok) toast(t('noDownload')); }); return; } const b=data instanceof Blob?data:new Blob([data],{type:type||(/\.json$/.test(name)?'application/json':'text/html')+';charset=utf-8'}), u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),4000); }
 let INSTALL=null; window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); INSTALL=e; if(S&&ui.view==='settings') render(); });
 window.addEventListener('appinstalled',()=>{ INSTALL=null; if(S) toast(t('installed')); });
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -2149,7 +2174,9 @@ async function snipUpload(blob,how,name){
     const fromLoc=loc&&loc.text===text&&loc.paras.length, pm=text&&!fromLoc?parseChat(text):[];
     const up=nowISO(), messages=pm.length>=2&&pm.some(m=>m.sender)?pm:(fromLoc?loc.paras:text.split(/\n{2,}/)).map(p=>({ts:null,sender:'',text:String(p).replace(/\s*\n\s*/g,' ').trim()})).filter(m=>m.text).map((m,i)=>Object.assign(m,{n:i+1}));
     const stamp=up.slice(0,16).replace('T',' ').replace(':','');
-    const rec=await mkRecord({id:'CR-'+(++S.counter),dealId:d.id,type:'photo',name:name||('Snip '+stamp+'.png'),uploadedAt:up,rawText:text,messages,method,fileHash,media:Object.assign({kind:'image',thumb},loc&&loc.lines.length?{ocr:{lines:loc.lines}}:{}),snip:how});
+    const rid='CR-'+(++S.counter), fname=name||('Snip '+stamp+'.png'); let fileInfo={};
+    if(useStorage(d)){ try{ fileInfo={path:await cloudUpload(d.id,rid,blob,fname),mime:blob.type||'image/png',size:blob.size}; }catch(e){ console.warn('upload',e); } }
+    const rec=await mkRecord({id:rid,dealId:d.id,type:'photo',name:fname,uploadedAt:up,rawText:text,messages,method,fileHash,media:Object.assign({kind:'image',thumb},loc&&loc.lines.length?{ocr:{lines:loc.lines}}:{},fileInfo),snip:how});
     d.records.push(rec); save();
     snipSet('done',`${tx(d.title)} · ${rec.id}`,rec.id); if(!SN.open&&!(SN.pip&&!SN.pip.closed)) toast(t('snipToast',{deal:tx(d.title)}));
     if(ui.view==='deal'&&ui.dealId===d.id){ ui.keep=true; render(); }
@@ -2253,7 +2280,7 @@ function renderHome(){
   const soon=calEvents().filter(e=>e.status!=='done'&&dayDiff(e.date)>=0&&dayDiff(e.date)<=21).slice(0,5);
   let side='';
   if(nx) side+=`<button class="card tap ev" data-act="openDeal" data-id="${nx.deal.id}"><span class="d"><b>${esc(fmtD(nx.date,{day:'numeric'}))}</b><span>${esc(fmtD(nx.date,{month:'short'}))}</span></span><span class="stack-s" style="gap:2px"><span class="lbl">${esc(t('nextUp'))} · ${esc(relDay(nx.date))}</span><span style="font-weight:700">${esc(tx(nx.label))}</span><span class="tiny">${esc(tx(nx.deal.title))} · ${esc(t(nx.status==='agreed'?'agreed':'proposed'))}</span></span></button>`;
-  side+=snipCard();
+  side+=snipCard(); if(isAndroid()) side+=getAppCard();
   if(soon.length) side+=`<section class="stack-s desk"><div class="sec-h"><h2 class="h2">${esc(t('comingUp'))}</h2><button class="btn sec sm" data-act="go" data-v="calendar">${ic('cal',16)} ${esc(t('calendar'))}</button></div><ul class="list card">${soon.map(evRow).join('')}</ul></section>`;
   let h=`<div class="home-grid"><aside class="home-side stack">${side}</aside><div class="home-main stack">`;
   h+=`<section class="stack"><div class="sec-h"><h2 class="h2">${esc(t('myDeals'))}</h2><button class="btn sec sm" data-act="newDeal">${ic('plus',16)} ${esc(t('newDeal'))}</button></div><ul class="list card deals">`;
@@ -2497,8 +2524,8 @@ function renderSettings(){
   <button class="card pad tap row between" style="display:flex;width:100%;text-align:left" data-act="go" data-v="data"><span class="stack-s" style="gap:2px"><b>${esc(t('yourData'))}</b><span class="tiny">${esc(t(a.train?'trainOn':'trainOff'))}</span></span>${ic('fwd',18)}</button>
   <section class="card pad stack"><b>${esc(t('appLang'))}</b><div class="langs">${LANGS.map(l=>`<button aria-pressed="${s.lang===l.c}" data-act="setLang" data-v="${l.c}">${esc(l.n)}</button>`).join('')}</div><p class="tiny">${esc(t('langNote'))}</p>${textSizeSeg()}${layoutSeg()}</section>${a.role==='lawyer'?'':`<section class="card pad row between" style="gap:12px"><span class="stack-s" style="gap:2px"><b>${esc(t('snipTool'))}</b><span class="tiny">${esc(t('snipSub'))}</span></span><button class="btn ${s.snip?'sec':''} sm" data-act="snipToggle">${esc(t(s.snip?'snipRemove':'snipAdd'))}</button></section>`}
   <section class="card pad stack"><b>${esc(t('readAloud'))}</b><label class="field">${esc(t('voice'))}<select class="sel" id="setVoice" data-change="setVoice"><option value="">${esc(t('deviceDefault'))}</option>${vs.map(v=>`<option value="${esc(v.voiceURI)}" ${s.voiceURI===v.voiceURI?'selected':''}>${esc(v.name)}</option>`).join('')}</select></label>${tts?(vs.length?'':`<div class="note warn">${esc(t('noVoice'))}</div>`):`<div class="note warn">${esc(t('o_noTts'))}</div>`}<label class="field">${esc(t('speed'))} <span class="tiny" id="rateVal">${s.rate.toFixed(2)}×</span><input type="range" id="setRate" min="0.6" max="1.4" step="0.05" value="${s.rate}"></label><button class="btn sec" data-act="testVoice">${ic('speaker',18)} ${esc(t('testVoice'))}</button></section>
-  <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
-  ${STANDALONE&&!isInstalled()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
+  <section class="card pad stack"><b>${esc(t('aiReading'))}</b><label class="check"><input type="checkbox" id="setAi" ${s.ai?'checked':''} data-change="setAi"><span>${esc(t('aiToggle'))}</span></label><p class="tiny">${esc(t(SAMPLE?'aiOn':'aiOff'))}</p>${aiViaServer()?`<div class="note ok small">${esc(t('aiServerOn'))}</div>`:''}${STANDALONE?`<div class="stack-s" style="border-top:1px solid var(--line-2);padding-top:12px"><b class="small">${esc(t('apiKeyT'))}</b><p class="tiny">${esc(t('apiKeyB'))}</p>${apiKey()?`<span class="chip c-ok" style="align-self:flex-start">${esc(t('apiSaved'))}</span><div><button class="btn sec sm" data-act="apiRemove">${esc(t('apiRemove'))}</button></div>`:`<label class="field">${esc(t('apiKeyLbl'))}<input class="inp mono" id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-..."></label><div><button class="btn sm" data-act="apiSave">${esc(t('apiSave'))}</button></div><p class="tiny">${esc(t('apiOff'))}</p>`}</div>`:''}</section>
+  ${getAppCard()}${STANDALONE&&!isInstalled()&&!NATIVE()?`<section class="card pad stack-s"><b>${esc(t('installT'))}</b><p class="small muted">${esc(t('installB'))}</p>${INSTALL?`<div><button class="btn sm" data-act="installApp">${esc(t('installBtn'))}</button></div>`:`<p class="tiny">${esc(t(isIOS()?'installIos':'installOther'))}</p>`}</section>`:''}
   <details class="card legal"><summary>${esc(t('legalNotes'))}</summary><div class="in"><p>${esc(t('legal1'))}</p><p>${esc(t('legal2'))}</p><p>${esc(t('legal3'))}</p><p>${esc(t('legal4'))}</p><p>${esc(t('legal5'))}</p></div></details>
   ${cloud.uid?'':`<button class="btn warn" data-act="reset">${esc(t('resetDemo'))}</button>`}`;
 }
@@ -2531,12 +2558,15 @@ function recordSheet(id){
   if(r.type==='voice') h+=`<div class="row wrap">${sayBtn('recMsgs',{lang:'en',sel:'.txt',label:'playVoice'})}</div>`;
   if(r.media&&r.media.src&&AUDIO[r.media.src]) h+=`<audio controls preload="none" src="${AUDIO[r.media.src]}" style="width:100%"></audio>`;
   else if(r.media&&r.media.data) h+=`<audio controls preload="none" src="${esc(r.media.data)}" style="width:100%"></audio>`;
+  else if(r.media&&r.media.kind==='audio'&&r.media.path) h+=`<audio controls preload="none" data-sbpath="${esc(r.media.path)}" style="width:100%"></audio>`;
+  if(r.media&&r.media.path&&r.media.kind!=='audio') h+=`<a class="btn sec sm" target="_blank" rel="noopener" href="#" data-sbpath="${esc(r.media.path)}" style="align-self:flex-start">${ic('file',16)} ${esc(t('openOriginal'))}</a>`;
+  if(r.media&&r.media.path) h+=`<p class="tiny row" style="gap:6px">${ic('lock',14)} ${esc(t('storedOnline'))}</p>`;
   else if(r.media&&r.media.big) h+=`<div class="note">${esc(t('asrBigNote'))}</div>`;
   if(r.asr) h+=`<p class="tiny">${esc(t(r.asr.edited?'asrRecEdited':'asrRecAuto'))}</p>`;
   else if(r.media&&r.media.demo) h+=`<div class="note">${esc(t('demoAudio'))}</div>`;
-  h+=`<div class="card pad stack-s seal-mini"><b class="small row" style="gap:6px">${ic('shield',16)} ${esc(t('fileCheckT'))}</b><span class="tiny">${esc(t('fileCheckB'))}</span><span class="mono">SHA-256 ${esc(r.sha256)}</span><div class="row wrap">${r.media&&(r.media.src||r.media.data)?`<button class="btn sec sm" data-act="dlOriginal" data-id="${r.id}">${ic('down',16)} ${esc(t('dlOriginal'))}</button>`:''}<label class="btn sec sm">${ic('file',16)} ${esc(t('checkCopy'))}<input type="file" hidden data-chkfile="${r.id}"></label></div><div id="chkOut"></div></div>`;
+  h+=`<div class="card pad stack-s seal-mini"><b class="small row" style="gap:6px">${ic('shield',16)} ${esc(t('fileCheckT'))}</b><span class="tiny">${esc(t('fileCheckB'))}</span><span class="mono">SHA-256 ${esc(r.sha256)}</span><div class="row wrap">${r.media&&(r.media.src||r.media.data||r.media.path)?`<button class="btn sec sm" data-act="dlOriginal" data-id="${r.id}">${ic('down',16)} ${esc(t('dlOriginal'))}</button>`:''}<label class="btn sec sm">${ic('file',16)} ${esc(t('checkCopy'))}<input type="file" hidden data-chkfile="${r.id}"></label></div><div id="chkOut"></div></div>`;
   h+=`<div class="row between"><span class="lbl">${esc(t('original'))}</span><button class="btn sec sm" data-act="verifyRecord" data-id="${r.id}">${ic('shield',16)} ${esc(t('verify'))}</button></div><div id="recVerify"></div><div id="recMsgs">${(()=>{ const U=usedMsgNs(d,r); return r.messages.map(m=>`<div class="msg ${U.has(m.n)?'used':''}"><span class="n">#${m.n}</span><div><div class="row between"><span class="who">${esc(m.sender)}</span><span class="tiny">${esc(m.ts?fmtDT(m.ts):'')}</span></div><div class="txt">${esc(m.text)}</div></div></div>`).join(''); })()}</div>`;
-  openSheet(h);
+  openSheet(h); hydrateFiles($('#sheet'));
 }
 function clauseSheet(cid){
   const d=deal(), cl=currentClauses(d), c=cl.find(x=>x.id===cid), idx=cl.indexOf(c), keys=c.keys||clauseKeys(cid);
@@ -2867,36 +2897,113 @@ function notarySheet(){ openSheet(sheetHead(t('notaryT'))+`<p class="small muted
 const roomConn={};
 /* ---------- online accounts and storage (Supabase) ---------- */
 const CFG=window.DRAFTIT_CONFIG||{};
-let SB=null; const cloud={uid:null,email:'',state:'saved',updatedAt:null,timer:null,dirty:false};
+let SB=null; const cloud={uid:null,email:'',state:'saved',updatedAt:null,timer:null,dirty:false,sent:new Map(),busy:false,again:false};
 function initCloud(){ if(!STANDALONE||!CFG.supabaseUrl||!CFG.supabaseAnonKey||!window.supabase||typeof window.supabase.createClient!=='function') return; try{ SB=window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }catch(e){ SB=null; } }
-function cloudPayload(){ const uid=cloud.uid, deals=S.deals.filter(d=>d.owner===uid), strs=contentStrings(deals), tr={};
+/* the account's own settings, translations and the order of its deals */
+function profileData(){ const uid=cloud.uid, deals=S.deals.filter(d=>d.owner===uid&&!d.guest), strs=contentStrings(deals), tr={};
   ['hi','mr','te','ta','kn'].forEach(lg=>{ const m=S.tr[lg]||{}, o={}; strs.forEach(x=>{ if(m[x]) o[x]=m[x]; }); tr[lg]=o; });
-  return {v:1,account:S.accounts[uid],deals,notary:(S.notary||[]).filter(n=>n.by===uid),settings:{lang:S.settings.lang,rate:S.settings.rate,voiceURI:S.settings.voiceURI,ai:S.settings.ai,textSize:S.settings.textSize||'m'},counter:S.counter,tr}; }
+  return {v:2,account:S.accounts[uid],order:deals.map(d=>d.id),notary:(S.notary||[]).filter(n=>n.by===uid),settings:{lang:S.settings.lang,rate:S.settings.rate,voiceURI:S.settings.voiceURI,ai:S.settings.ai,textSize:S.settings.textSize||'m',layout:S.settings.layout||'auto',snip:!!S.settings.snip},counter:S.counter,tr}; }
+/* the whole state as database rows: profile, deals, evidence, locked versions and signatures */
+function cloudRows(){ const uid=cloud.uid, rows=new Map();
+  rows.set('p',{t:'profiles',r:{user_id:uid,data:profileData()}});
+  S.deals.filter(d=>d.owner===uid&&!d.guest).forEach(d=>{ const {records,versions,...rest}=d;
+    rows.set('d:'+d.id,{t:'deals',r:{owner:uid,id:d.id,title:typeof d.title==='string'?d.title:'',data:rest}});
+    (records||[]).forEach(r=>{ const {rawText,messages,media,...meta}=r; rows.set('e:'+d.id+':'+r.id,{t:'evidence',r:{owner:uid,id:r.id,deal_id:d.id,type:r.type||'paste',name:r.name||'',sha256:r.sha256,raw_text:rawText||'',messages:messages||[],media:media||null,data:meta,uploaded_at:r.uploadedAt||null}}); });
+    (versions||[]).forEach(v=>{ const {payload,signatures,lawyer,...vm}=v; rows.set('v:'+d.id+':'+v.rev,{t:'versions',r:{owner:uid,deal_id:d.id,rev:v.rev,hash:v.hash,prev_hash:v.prevHash||null,frozen_at:v.frozenAt||null,payload,lawyer:lawyer||null,data:vm}});
+      (signatures||[]).forEach(s=>rows.set('s:'+d.id+':'+v.rev+':'+s.party,{t:'signatures',r:{owner:uid,deal_id:d.id,rev:v.rev,party:s.party,data:s,signed_at:s.at||null}})); }); });
+  return rows; }
+const IMMUTABLE={evidence:'owner,deal_id,id',signatures:'owner,deal_id,rev,party'};
 function setCloudState(st){ cloud.state=st; const el=document.getElementById('cloudState'); if(el) el.outerHTML=cloudBadge(); }
 const cloudBadge=()=>!cloud.uid?'':`<span id="cloudState" class="cloud-badge ${cloud.state}">${ic(cloud.state==='error'?'excl':cloud.state==='saving'?'spark':'check',13)} ${esc(t(cloud.state==='saving'?'savingOnline':cloud.state==='error'?'saveFailed':'savedOnline'))}</span>`;
 function scheduleCloudSave(){ cloud.dirty=true; clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudSaveNow,1200); if(cloud.state!=='saving') setCloudState('saving'); }
-async function cloudSaveNow(){ if(!SB||!cloud.uid) return false; clearTimeout(cloud.timer); cloud.dirty=false; const at=new Date().toISOString();
-  let error=null; try{ ({error}=await SB.from('workspaces').upsert({user_id:cloud.uid,data:cloudPayload(),updated_at:at})); }catch(e){ error=e; }
-  if(error){ cloud.dirty=true; setCloudState('error'); cloud.timer=setTimeout(cloudSaveNow,6000); return false; }
-  cloud.updatedAt=at; setCloudState('saved'); return true; }
+/* send only the rows that changed since the last save; evidence and signatures are add-only */
+async function cloudSaveNow(){ if(!SB||!cloud.uid) return false; if(cloud.busy){ cloud.again=true; return false; }
+  cloud.busy=true; clearTimeout(cloud.timer); cloud.dirty=false; const at=new Date().toISOString(), uid=cloud.uid;
+  const rows=cloudRows(), up={profiles:[],deals:[],evidence:[],versions:[],signatures:[]};
+  for(const [k,{t,r}] of rows){ const s=JSON.stringify(r); if(cloud.sent.get(k)===s) continue; if(IMMUTABLE[t]&&cloud.sent.has(k)){ cloud.sent.set(k,s); continue; } if(t==='profiles'||t==='deals') r.updated_at=at; up[t].push({k,r,s}); }
+  const gone=[...cloud.sent.keys()].filter(k=>!rows.has(k));
+  let ok=true;
+  try{
+    const send=async t=>{ const list=up[t]; if(!list.length) return; const q=SB.from(t), data=list.map(x=>x.r);
+      const {error}=IMMUTABLE[t]?await q.upsert(data,{onConflict:IMMUTABLE[t],ignoreDuplicates:true}):await q.upsert(data); if(error) throw error; list.forEach(x=>cloud.sent.set(x.k,x.s)); };
+    for(const t of ['profiles','deals','evidence','versions','signatures']) await send(t);
+    for(const k of gone){ const [kind,dl,id]=k.split(':'); let error=null;
+      if(kind==='e') ({error}=await SB.from('evidence').delete().eq('owner',uid).eq('deal_id',dl).eq('id',id));
+      else if(kind==='d') ({error}=await SB.from('deals').delete().eq('owner',uid).eq('id',dl));
+      if(error) throw error; cloud.sent.delete(k); }
+  }catch(e){ ok=false; console.warn('cloud save',e); }
+  cloud.busy=false;
+  if(!ok){ cloud.dirty=true; setCloudState('error'); cloud.timer=setTimeout(cloudSaveNow,6000); return false; }
+  cloud.updatedAt=at; if(cloud.again){ cloud.again=false; return cloudSaveNow(); } setCloudState('saved'); return true; }
+/* older accounts kept everything in one workspace record */
 function applyWorkspace(w){ const uid=cloud.uid; if(w.account) S.accounts[uid]=Object.assign({},w.account,{id:uid}); S.deals=Array.isArray(w.deals)?w.deals:[]; S.notary=w.notary||[]; Object.assign(S.settings,w.settings||{}); S.counter=Math.max(S.counter,w.counter||0); if(w.tr) for(const lg in w.tr){ S.tr[lg]=S.tr[lg]||{}; Object.assign(S.tr[lg],w.tr[lg]); } }
-async function loadCloud(user){
-  cloud.uid=user.id; cloud.email=user.email||'';
-  const {data,error}=await SB.from('workspaces').select('data,updated_at').eq('user_id',user.id).maybeSingle();
-  if(error) throw error;
-  if(data&&data.data){ applyWorkspace(data.data); cloud.updatedAt=data.updated_at; }
-  else { const A=ui.auth||{}, md=user.user_metadata||{}, role=['seller','buyer','lawyer'].includes(A.role)&&A.mode==='signup'?A.role:(md.role||'seller');
-    const name=String((A.mode==='signup'&&A.name)||md.name||(user.email||'').split('@')[0]).trim();
-    S.accounts[user.id]={id:user.id,name,email:user.email||'',mobile:String(A.mobile||'').replace(/\D/g,''),role,business:role==='lawyer'?'':String(A.business||md.business||'').trim(),train:!!A.train,tutDone:false,created:nowISO()};
-    if(role==='lawyer') Object.assign(S.accounts[user.id],{lawyerId:'lw_'+user.id.slice(0,8),enrol:String(A.enrol||'').trim(),bar:A.bar||'Karnataka',fee:+A.fee||0});
-    S.deals=[]; S.notary=[]; if(role!=='lawyer'){ cloneTemplate(1,user.id); cloneTemplate(0,user.id); }
-    await cloudSaveNow(); }
-  useAccount(user.id);
+function applyRows(prof,deals,ev,vs,sg){ const uid=cloud.uid, P=(prof&&prof.data)||{};
+  if(P.account) S.accounts[uid]=Object.assign({},P.account,{id:uid});
+  Object.assign(S.settings,P.settings||{}); S.notary=P.notary||[]; S.counter=Math.max(S.counter,P.counter||0);
+  if(P.tr) for(const lg in P.tr){ S.tr[lg]=S.tr[lg]||{}; Object.assign(S.tr[lg],P.tr[lg]); }
+  const byTime=(a,b)=>String(a.created_at||'').localeCompare(String(b.created_at||''));
+  const list=deals.map(row=>{ const d=Object.assign({},row.data,{id:row.id,owner:uid});
+    d.records=ev.filter(e=>e.deal_id===row.id).sort(byTime).map(e=>Object.assign({},e.data,{id:e.id,type:e.type,name:e.name,sha256:e.sha256,rawText:e.raw_text||'',messages:e.messages||[],media:e.media||null}));
+    d.versions=vs.filter(v=>v.deal_id===row.id).sort((a,b)=>a.rev-b.rev).map(v=>Object.assign({},v.data,{rev:v.rev,hash:v.hash,payload:v.payload,lawyer:v.lawyer||null,signatures:sg.filter(s=>s.deal_id===row.id&&s.rev===v.rev).sort((a,b)=>String(a.signed_at||'').localeCompare(String(b.signed_at||''))).map(s=>s.data)}));
+    return d; });
+  const order=P.order||[]; list.sort((a,b)=>{ const i=order.indexOf(a.id), j=order.indexOf(b.id); return (i<0?1e9:i)-(j<0?1e9:j); });
+  S.deals=list; cloud.updatedAt=prof&&prof.updated_at||null; }
+async function fetchRows(uid){
+  const q=(t,col)=>SB.from(t).select('*').eq(col||'owner',uid);
+  const res=await Promise.all([q('profiles','user_id'),q('deals'),q('evidence'),q('versions'),q('signatures')]);
+  for(const r of res) if(r.error) throw r.error;
+  return res.map(r=>r.data||[]);
 }
-async function cloudSignOut(){ if(cloud.dirty) await cloudSaveNow(); try{ await SB.auth.signOut(); }catch(e){} cloud.uid=null; cloud.email=''; S=null; await seedState(); }
+function markSent(){ cloud.sent=new Map(); for(const [k,{r}] of cloudRows()) cloud.sent.set(k,JSON.stringify(r)); }
+async function loadCloud(user){
+  cloud.uid=user.id; cloud.email=user.email||''; cloud.sent=new Map();
+  const [prof,deals,ev,vs,sg]=await fetchRows(user.id);
+  if(prof.length||deals.length){ applyRows(prof[0],deals,ev,vs,sg); markSent(); }
+  else {
+    let legacy=null; try{ const w=await SB.from('workspaces').select('data').eq('user_id',user.id).maybeSingle(); legacy=w.data&&w.data.data; }catch(e){}
+    if(legacy) applyWorkspace(legacy);
+    else { const A=ui.auth||{}, md=user.user_metadata||{}, role=['seller','buyer','lawyer'].includes(A.role)&&A.mode==='signup'?A.role:(md.role||'seller');
+      const name=String((A.mode==='signup'&&A.name)||md.name||(user.email||'').split('@')[0]).trim();
+      S.accounts[user.id]={id:user.id,name,email:user.email||'',mobile:String(A.mobile||'').replace(/\D/g,''),role,business:role==='lawyer'?'':String(A.business||md.business||'').trim(),train:!!A.train,tutDone:false,created:nowISO()};
+      if(role==='lawyer') Object.assign(S.accounts[user.id],{lawyerId:'lw_'+user.id.slice(0,8),enrol:String(A.enrol||'').trim(),bar:A.bar||'Karnataka',fee:+A.fee||0});
+      S.deals=[]; S.notary=[]; if(role!=='lawyer'){ cloneTemplate(1,user.id); cloneTemplate(0,user.id); } }
+    await cloudSaveNow(); }
+  useAccount(user.id); setupCloudAI();
+}
+async function cloudSignOut(){ if(cloud.dirty) await cloudSaveNow(); try{ await SB.auth.signOut(); }catch(e){} cloud.uid=null; cloud.email=''; cloud.sent=new Map(); setupCloudAI(); S=null; await seedState(); }
+/* coming back to the tab: pick up changes made on another device */
 document.addEventListener('visibilitychange',async()=>{ if(!SB||!cloud.uid) return; if(document.hidden){ if(cloud.dirty) cloudSaveNow(); return; }
-  if(cloud.dirty||!$('#sheetWrap').hidden) return;
-  try{ const {data}=await SB.from('workspaces').select('data,updated_at').eq('user_id',cloud.uid).maybeSingle(); if(data&&cloud.updatedAt&&Date.parse(data.updated_at)>Date.parse(cloud.updatedAt)+500){ applyWorkspace(data.data); cloud.updatedAt=data.updated_at; ui.keep=true; render(); } }catch(e){} });
+  if(cloud.dirty||cloud.busy||!$('#sheetWrap').hidden) return;
+  try{ const {data}=await SB.from('profiles').select('updated_at').eq('user_id',cloud.uid).maybeSingle();
+    if(data&&cloud.updatedAt&&Date.parse(data.updated_at)>Date.parse(cloud.updatedAt)+500){ const [prof,deals,ev,vs,sg]=await fetchRows(cloud.uid); applyRows(prof[0],deals,ev,vs,sg); markSent(); ui.keep=true; render(); } }catch(e){} });
+
+/* ---------- original files in Supabase Storage ---------- */
+const BUCKET='evidence';
+const useStorage=d=>!!(SB&&cloud.uid&&(!d||(d.owner===cloud.uid&&!d.guest)));
+const safeName=n=>String(n||'file').normalize('NFKD').replace(/[^\w.\-]+/g,'_').replace(/^_+/,'').slice(-80)||'file';
+async function cloudUpload(dealId,recId,blob,name){ const path=`${cloud.uid}/${dealId}/${recId}/${safeName(name)}`;
+  const {error}=await SB.storage.from(BUCKET).upload(path,blob,{contentType:blob.type||'application/octet-stream',upsert:false}); if(error) throw error; return path; }
+const SIGNED=new Map();
+async function cloudFileURL(path){ const c=SIGNED.get(path); if(c&&c.exp>Date.now()) return c.url;
+  const {data,error}=await SB.storage.from(BUCKET).createSignedUrl(path,3600); if(error) throw error; SIGNED.set(path,{url:data.signedUrl,exp:Date.now()+3300e3}); return data.signedUrl; }
+async function cloudFileBlob(path){ const {data,error}=await SB.storage.from(BUCKET).download(path); if(error) throw error; return data; }
+function hydrateFiles(root){ if(!SB) return; (root||document).querySelectorAll('[data-sbpath]').forEach(async el=>{ try{ const u=await cloudFileURL(el.dataset.sbpath); if(el.tagName==='A') el.href=u; else el.src=u; el.removeAttribute('data-sbpath'); el.classList.remove('loading'); }catch(e){ el.classList.add('file-missing'); } }); }
+async function cloudRemoveFiles(paths){ paths=paths.filter(Boolean); for(let i=0;i<paths.length;i+=100){ try{ await SB.storage.from(BUCKET).remove(paths.slice(i,i+100)); }catch(e){} } }
+
+/* ---------- Claude through the DraftIt server (Supabase Edge Function) ----------
+   When signed in online, AI requests go to the "claude" function, which holds the Anthropic key,
+   so nobody has to paste a key in the browser. */
+let EDGE_AI_OFF=false;
+async function edgeSend(body){
+  const {data,error}=await SB.functions.invoke('claude',{body});
+  if(error){ const st=(error.context&&error.context.status)||0; if(st===404){ EDGE_AI_OFF=true; SAMPLE=apiKey()?makeApiSample(apiKey()):null; }
+    const err=new Error('server ai '+st); err.code=st===401||st===403||st===404?'not_granted':st===429?'rate_limited':'upstream_error'; throw err; }
+  return typeof data==='string'?JSON.parse(data):data;
+}
+function setupCloudAI(){ if(!STANDALONE) return; const k=apiKey();
+  if(k) SAMPLE=makeApiSample(k); else if(SB&&cloud.uid&&!EDGE_AI_OFF&&CFG.aiServer!==false) SAMPLE=makeSample(edgeSend); else SAMPLE=null; }
+const aiViaServer=()=>!!(STANDALONE&&SB&&cloud.uid&&!apiKey()&&!EDGE_AI_OFF&&SAMPLE);
+
 /* live chat outside Claude: Supabase Realtime, shaped like the room capability */
 function sbRoom(name){
   const key=Math.random().toString(36).slice(2,10), ch=SB.channel(name,{config:{broadcast:{self:false},presence:{key}}}), L={msg:[],peers:[],conn:[]}; let connected=false, mine={};
@@ -2995,7 +3102,7 @@ function renderAuth(){
     if(A.role==='lawyer') h+=f('enrol','enrolNo','placeholder="KAR/1234/2016"')+`<label class="field">${esc(t('barState'))}<select class="sel" data-auth="bar">${['Karnataka','Maharashtra','Tamil Nadu','Telangana','Andhra Pradesh','Delhi','Gujarat','Kerala'].map(x=>`<option ${A.bar===x?'selected':''}>${x}</option>`).join('')}</select></label>`+f('fee','lawyerFee','inputmode="numeric"');
     else h+=f('business','business');
     h+=`<label class="check"><input type="checkbox" data-auth="terms" ${A.terms?'checked':''}><span>${esc(t('agreeTerms'))} <button class="link" data-act="go" data-v="data">${esc(t('readPrivacy'))}</button></span></label><label class="check"><input type="checkbox" data-auth="train" ${A.train?'checked':''}><span class="small">${esc(t('trainConsent'))}</span></label><button class="btn full" data-act="authOtp" ${A.busy?'disabled':''}>${A.busy?'<span class="spin"></span>':''} ${esc(t(SB?'sendCode':'sendOtp'))}</button><p class="tiny">${esc(t('haveAccount'))} <button class="link" data-act="authMode" data-v="login">${esc(t('logIn'))}</button></p>`; }
-  h+=`</section><section class="stack-s"><span class="lbl">${esc(t(SB?'demoLocal':'demoAccounts'))}</span><div class="stack-s"><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_ravi_4821"><span class="avatar">RK</span><span class="small"><b>${esc(t('demoSeller'))}</b></span></button><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_meera_1016"><span class="avatar">MI</span><span class="small"><b>${esc(t('demoLawyer'))}</b></span></button></div></section></main>`;
+  h+=`</section><section class="stack-s"><span class="lbl">${esc(t(SB?'demoLocal':'demoAccounts'))}</span><div class="stack-s"><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_ravi_4821"><span class="avatar">RK</span><span class="small"><b>${esc(t('demoSeller'))}</b></span></button><button class="card pad tap acct-btn" data-act="demoLogin" data-id="u_meera_1016"><span class="avatar">MI</span><span class="small"><b>${esc(t('demoLawyer'))}</b></span></button></div></section>${getAppCard()}</main>`;
   return h;
 }
 function afterLogin(){ ui.quip=1+Math.floor(Math.random()*6); const a=acct(); ui.auth=null; ui.view='home'; ui.dealId=null; ui.tut=a&&!a.tutDone&&a.role!=='lawyer'?0:null; window.scrollTo(0,0); render(); ensureTr(); openHashRoom(); }
@@ -3197,9 +3304,15 @@ async function saveRecord(){
   const id='CR-'+(++S.counter), up=nowISO(), srcTs=x.srcTime?x.srcTime+':00'+TZ:null; let messages, method='verbatim';
   if(x.type==='paste'||x.type==='whatsapp'){ messages=parseChat(text); if(!messages.length) return toast(t('e_nomsg')); }
   else { const sender=x.speaker==='both'?t('bothCall'):partyName(d,x.speaker); messages=text.split(/\n{2,}/).map((p,i)=>({n:i+1,ts:srcTs,sender,text:p.trim()})).filter(m=>m.text); method=x.type==='voice'?'transcript':x.method||'ocr'; }
-  const voiceMedia=x.type!=='voice'?null:x.audioSrc?{kind:'audio',src:x.audioSrc}:x.file&&x.file.size<=1500000?{kind:'audio',data:await readAs(x.file,'url'),mime:x.file.type||'audio/mpeg'}:x.file?{kind:'audio',big:true}:{kind:'audio',demo:!!x.audioDemo};
+  /* online: the original file goes to Supabase Storage first */
+  let filePath=null;
+  if(x.file&&useStorage(d)){ x.busy=true; x.status=t('uploadingOriginal'); addEvidenceSheet();
+    try{ filePath=await cloudUpload(d.id,id,x.file,x.fileName||x.file.name); }catch(e){ console.warn('upload',e); toast(t('uploadFail')); }
+    x.busy=false; x.status=''; }
+  const fileInfo=filePath?{path:filePath,mime:x.file.type||'',size:x.file.size}:null;
+  const voiceMedia=x.type!=='voice'?(fileInfo&&!x.thumb?Object.assign({kind:'file'},fileInfo):null):x.audioSrc?{kind:'audio',src:x.audioSrc}:fileInfo?Object.assign({kind:'audio'},fileInfo):x.file&&x.file.size<=1500000?{kind:'audio',data:await readAs(x.file,'url'),mime:x.file.type||'audio/mpeg'}:x.file?{kind:'audio',big:true}:{kind:'audio',demo:!!x.audioDemo};
   const asrInfo=x.type==='voice'&&x.asr&&x.asr.state==='done'?{model:x.asr.model,lang:x.asr.lang,edited:text!==(x.autoText||'').trim()}:null;
-  const rec=await mkRecord({id,dealId:d.id,type:x.type,name:x.type==='paste'?'Pasted chat':(x.fileName||en('src_'+x.type)),uploadedAt:up,rawText:text,messages,method,fileHash:x.fileHash||null,media:x.thumb?Object.assign({kind:'image',thumb:x.thumb},x.ocr?{ocr:x.ocr}:{}):voiceMedia,asr:asrInfo,consent:x.type==='voice'?{basis:x.consent,party:true,at:up}:null});
+  const rec=await mkRecord({id,dealId:d.id,type:x.type,name:x.type==='paste'?'Pasted chat':(x.fileName||en('src_'+x.type)),uploadedAt:up,rawText:text,messages,method,fileHash:x.fileHash||null,media:x.thumb?Object.assign({kind:'image',thumb:x.thumb},x.ocr?{ocr:x.ocr}:{},fileInfo||{}):voiceMedia,asr:asrInfo,consent:x.type==='voice'?{basis:x.consent,party:true,at:up}:null});
   d.records.push(rec); save(); closeSheet(); ui.tab='terms'; render(); toast(t('o_saved',{x:id})); analyseDeal(d);
 }
 
@@ -3392,7 +3505,7 @@ document.addEventListener('click',async e=>{
       openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico">${ic('trash',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('delEvidenceQ'))}</h2><p><b>${esc(recName(r))}</b> · <span class="mono">${esc(r.id)}</span></p><p class="small muted">${esc(t('delEvidenceB'))}</p></div><div class="stack-s"><button class="btn danger full" data-act="recDel" data-id="${r.id}">${ic('trash',18)} ${esc(t('delEvidenceYes'))}</button><button class="btn sec full" data-act="closeSheet">${esc(t('cancel'))}</button></div>`); break; }
     case 'recDel': { const r=d&&d.records.find(x=>x.id===a.dataset.id); if(!r) break; closeSheet();
       const pre=r.id+'#', keep=ref=>!(typeof ref==='string'&&ref.startsWith(pre));
-      d.records=d.records.filter(x=>x!==r);
+      d.records=d.records.filter(x=>x!==r); if(r.media&&r.media.path&&useStorage(d)) cloudRemoveFiles([r.media.path]);
       Object.keys(d.terms||{}).forEach(k=>{ const tm=d.terms[k]; if(!tm) return; const before=(tm.evidence||[]).length; tm.evidence=(tm.evidence||[]).filter(keep); tm.history=(tm.history||[]).filter(h=>!h||keep(h.ref)); if(before&&!tm.evidence.length) d.terms[k]=T('missing'); });
       (d.flags||[]).forEach(f=>{ if(Array.isArray(f.refs)) f.refs=f.refs.filter(keep); });
       save(); ui.keep=true; render(); toast(t('delEvidenceDone',{x:r.id})); analyseDeal(d); break; }
@@ -3477,11 +3590,11 @@ document.addEventListener('click',async e=>{
     case 'readEl': readEl(a); break;
     case 'setTextSize': S.settings.textSize=a.dataset.v; try{ localStorage.setItem('draftit.ts',a.dataset.v); }catch(err){} save(); applyTextSize(); if(!$('#sheetWrap').hidden) langSheet(); else { ui.keep=true; render(); } break;
     case 'apiSave': { const k=(($('#apiKey')||{}).value||'').trim(); if(!k) break; const smp=makeApiSample(k); try{ await smp('Reply with the single word OK.',{modelTier:'quick'}); }catch(err){ return toast(t('apiBad')); } try{ localStorage.setItem('draftit.key',k); }catch(err){} SAMPLE=smp; S.settings.ai=true; save(); ui.keep=true; render(); toast(t('apiSaved')); ensureTr(); break; }
-    case 'apiRemove': try{ localStorage.removeItem('draftit.key'); }catch(err){} SAMPLE=null; ui.keep=true; render(); toast(t('apiRemoved')); break;
+    case 'apiRemove': try{ localStorage.removeItem('draftit.key'); }catch(err){} SAMPLE=null; setupCloudAI(); ui.keep=true; render(); toast(t('apiRemoved')); break;
     case 'installApp': if(INSTALL){ INSTALL.prompt(); try{ await INSTALL.userChoice; }catch(err){} INSTALL=null; ui.keep=true; render(); } break;
     case 'rmLogo': { syncParties(d); const [pid,k]=a.dataset.v.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=''; save(); partySheet(); break; }
     case 'sampleLogo': { syncParties(d); const [pid,k]=a.dataset.v.split(':'), p=d.parties.find(x=>x.id===pid); p[k]=sampleImage(p,k); save(); partySheet(); break; }
-    case 'dlOriginal': { const r=d.records.find(x=>x.id===a.dataset.id); if(r&&r.media&&r.media.data){ const blob=await (await fetch(r.media.data)).blob(); if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:blob}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else downloadBlob(r.name,blob); break; } if(r&&r.media&&r.media.src){ if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:new Blob([audioBytes(r.media.src)],{type:'audio/mpeg'})}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else { const aEl=document.createElement('a'); aEl.href=AUDIO[r.media.src]; aEl.download=r.name; document.body.appendChild(aEl); aEl.click(); aEl.remove(); } } break; }
+    case 'dlOriginal': { const r=d.records.find(x=>x.id===a.dataset.id); if(r&&r.media&&(r.media.data||r.media.path)){ let blob; try{ blob=r.media.path?await cloudFileBlob(r.media.path):await (await fetch(r.media.data)).blob(); }catch(err){ toast(t('noDownload')); break; } if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:blob}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else downloadBlob(r.name,blob); break; } if(r&&r.media&&r.media.src){ if(DOWNLOADS){ try{ await DOWNLOADS.save({filename:r.name,data:new Blob([audioBytes(r.media.src)],{type:'audio/mpeg'})}); toast(t('o_savedFile')); }catch(e){ if(!(e&&e.code==='declined')) toast(t('noDownload')); } } else { const aEl=document.createElement('a'); aEl.href=AUDIO[r.media.src]; aEl.download=r.name; document.body.appendChild(aEl); aEl.click(); aEl.remove(); } } break; }
     case 'roomSmart': roomSmart(); break;
     case 'roomSave': await roomSave(); break;
     case 'tutNext': stopSpeak(true); if(ui.tut>=TUT.length-1) endTutorial(); else { ui.tut++; render(); } break;
@@ -3516,7 +3629,7 @@ document.addEventListener('click',async e=>{
     case 'demoLogin': useAccount(a.dataset.id); ui.demoBack=null; afterLogin(); break;
     case 'logoutAsk': openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico">${ic('logout',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('logoutQ'))}</h2><p class="small muted">${esc(t(SB&&cloud.uid?'logoutSubCloud':'logoutSubLocal'))}</p></div><div class="stack-s"><button class="btn danger full" data-act="logout">${esc(t('logOutYes'))}</button><button class="btn sec full" data-act="closeSheet">${esc(t('cancel'))}</button></div>`); break;
     case 'logout': closeSheet(); stopSpeak(true); if(SB&&cloud.uid){ await cloudSignOut(); } else { S.session=null; save(); } ui.auth=null; ui.demoBack=null; ui.view='auth'; ui.dealId=null; window.scrollTo(0,0); render(); break;
-    case 'deleteAcct': if(a.dataset.sure&&SB&&cloud.uid){ let error=null; try{ ({error}=await SB.rpc('delete_my_account')); }catch(err){ error=err; } if(error) return toast(t('saveFailed')); cloud.dirty=false; cloud.uid=null; try{ await SB.auth.signOut(); }catch(err){} S=null; await seedState(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); }
+    case 'deleteAcct': if(a.dataset.sure&&SB&&cloud.uid){ let error=null; await cloudRemoveFiles(S.deals.filter(x=>x.owner===cloud.uid).flatMap(x=>x.records.map(r=>r.media&&r.media.path))); try{ ({error}=await SB.rpc('delete_my_account')); }catch(err){ error=err; } if(error) return toast(t('saveFailed')); cloud.dirty=false; cloud.uid=null; try{ await SB.auth.signOut(); }catch(err){} S=null; await seedState(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); }
       else if(a.dataset.sure){ const id=S.session; S.deals=S.deals.filter(x=>x.owner!==id); delete S.accounts[id]; S.session=null; save(); ui.view='auth'; ui.auth=null; render(); toast(t('o_deleted')); } else { a.dataset.sure='1'; a.textContent=t('deleteSure'); } break;
     case 'stampNotNeeded': d.stamp.status='not_needed'; save(); ui.keep=true; render(); break;
     case 'traceClause': ui.traceClause=a.dataset.id; ui.keep=true; render(); break;
@@ -3566,7 +3679,15 @@ document.addEventListener('input',e=>{ const el=e.target;
 document.addEventListener('keydown',e=>{ if(e.target&&e.target.id==='roomInput'&&e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); roomSend(); } });
 if('speechSynthesis' in window){ try{ speechSynthesis.onvoiceschanged=()=>{ if(ui.view==='settings') render(); }; speechSynthesis.getVoices(); }catch(e){} }
 
+/* Android back button: close what is open, then go back, then leave the app */
+function setupNative(){ const A=NP('App'); if(!A||setupNative.done) return; setupNative.done=true;
+  A.addListener('backButton',()=>{ if(document.querySelector('.crop-wrap')) return; if(!$('#sheetWrap').hidden){ closeSheet(); return; } if(typeof SN!=='undefined'&&SN.open){ SN.open=false; renderSnip(); return; } if(ui.tut!=null){ endTutorial(); return; }
+    if(ui.view==='room'&&ui.roomDeal&&!ui.guest){ ui.view='deal'; ui.dealId=ui.roomDeal; render(); return; }
+    if(ui.view!=='home'&&ui.view!=='auth'){ ui.view='home'; window.scrollTo(0,0); render(); return; } A.exitApp(); }); }
+/* read-only hook for automated tests and debugging in the browser console */
+Object.defineProperty(window,'__draftit',{value:Object.freeze({state:()=>S,integrity:(d,t)=>integrityCheck(d,t)})});
 (async function boot(){
+  setupNative();
   initCloud();
   if(SB){ render(); await seedState(); S.session=null; let user=null;
     try{ const {data}=await SB.auth.getSession(); user=data&&data.session&&data.session.user; }catch(e){}
