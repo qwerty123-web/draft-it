@@ -121,8 +121,17 @@ function makeApiSample(key){
 /* inside the DraftIt Android app (Capacitor) */
 const NATIVE=()=>{ try{ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()); }catch(e){ return false; } };
 const NPC={};
+/* The app loads the live site, so Capacitor's JavaScript package is not on the page; the native bridge
+   still provides nativePromise/nativeCallback, so plugins are called through those directly. */
 const NP=n=>{ if(!NATIVE()) return null; if(n in NPC) return NPC[n]; const C=window.Capacitor; let p=null;
-  try{ if(C.isPluginAvailable&&!C.isPluginAvailable(n)) p=null; else if(C.Plugins&&C.Plugins[n]) p=C.Plugins[n]; else if(C.registerPlugin) p=C.registerPlugin(n); }catch(e){ p=null; }
+  try{
+    if(C.Plugins&&C.Plugins[n]) p=C.Plugins[n];
+    else if(typeof C.nativePromise==='function'&&!(Array.isArray(C.PluginHeaders)&&!C.PluginHeaders.some(h=>h&&h.name===n))){
+      p=new Proxy({},{get:(_,m)=>{ if(m==='then'||typeof m!=='string') return undefined;
+        if(m==='addListener') return (ev,cb)=>{ const id=C.nativeCallback(n,'addListener',{eventName:ev},data=>{ try{ cb(data); }catch(e){} }); return Promise.resolve({remove:()=>C.nativeCallback(n,'removeListener',{eventName:ev,callbackId:id},()=>{})}); };
+        return opts=>C.nativePromise(n,m,opts||{}); }});
+    }
+  }catch(e){ p=null; }
   return (NPC[n]=p); };
 const APK_URL='https://github.com/qwerty123-web/draft-it/releases/download/android-latest/DraftIt.apk';
 const isAndroid=()=>/android/i.test(navigator.userAgent);
