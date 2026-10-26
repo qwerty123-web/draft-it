@@ -610,3 +610,10 @@ label.check:has(.err){flex-wrap:wrap}
 .demo-code{background:var(--navy-t,#E8EEF8);color:var(--brand,#0B2E63);border-radius:10px;padding:10px 12px;font-weight:600;font-size:.9375rem}
 .offline-bar{display:flex;align-items:center;gap:8px;background:var(--amber-t);color:var(--amber);font-size:.8125rem;font-weight:600;padding:8px 16px;padding-left:max(16px,var(--sal,0px))}
 .mask-hint{display:block;color:var(--amber);font-size:.8125rem;font-weight:600;margin-top:6px}
+
+/* red bin in the top right corner of each deal card */
+.deal-li{position:relative}
+.deal-del{position:absolute;top:.75rem;right:.75rem;z-index:1;width:2.5rem;height:2.5rem;border:1.5px solid #F3C4BF;border-radius:.75rem;background:var(--red-t);color:var(--red);display:grid;place-items:center;cursor:pointer}
+.deal-del:hover{background:#F9D5D0;border-color:var(--red)}
+.deal-del:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.deal-li .deal-row>.row:first-child{padding-right:3.25rem}

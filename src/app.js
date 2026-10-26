@@ -201,9 +201,9 @@ function actAllowed(act,a){
   if(['authMode','authRole','authBack','authOtp','authVerify','authJoin','demoLogin','langSheet','setLang','closeSheet','setTextSize','reset','reloadApp','tutNext','tutPrev','tutSkip','tutListen','readEl','stopSpeak','testVoice','installApp'].includes(act)) return true;
   if(!acct()) return act==='go'&&['auth','data','home'].includes(a.dataset.v)||(!!ui.guest&&DEAL_READ.has(act)&&canSeeDeal(deal(ui.roomDeal)));
   if(act==='go') return viewAllowed(a.dataset.v);
-  const byId=['openDeal','versionSheet','pickDeal','openRoom'].includes(act);
+  const byId=['openDeal','versionSheet','pickDeal','openRoom','dealDelAsk','dealDel'].includes(act);
   const d=byId?deal(a.dataset.id):ui.view==='room'?deal(ui.roomDeal):ui.dealId?deal():null;
-  if(byId) return act==='pickDeal'?canEditDeal(d):canSeeDeal(d);
+  if(byId) return ['pickDeal','dealDelAsk','dealDel'].includes(act)?canEditDeal(d):canSeeDeal(d);
   if(USER_ONLY.has(act)) return !isLawyer();
   if(LAWYER_ONLY.has(act)) return isLawyer()&&canSeeDeal(d);
   if(act==='openAsLawyer') return canEditDeal(d)&&!!d.lawyerReq&&!(SB&&cloud.uid);
@@ -877,7 +877,7 @@ function renderHome(){
   h+=`<section class="stack"><div class="sec-h"><h2 class="h2">${esc(t('myDeals'))}</h2><button class="btn sec sm" data-act="newDeal">${ic('plus',16)} ${esc(t('newDeal'))}</button></div><ul class="list card deals">`;
   const ds=myDeals();
   ds.forEach(d=>{ const c=confidence(d), st=dealState(d), bad=standards(d).filter(x=>x.status==='fail').length;
-    h+=`<li><button class="tap deal-row" data-act="openDeal" data-id="${d.id}"><span class="row between" style="align-items:flex-start"><span class="t">${esc(tx(d.title))}</span><span class="pct">${esc(t('settledPct',{n:c.total}))}</span></span><span class="small muted">${esc(d.parties[1].org)}${d.value?' · '+rupee(d.value):''}</span><span class="bar"><i style="width:${c.total}%"></i></span><span class="row wrap" style="gap:6px"><span class="chip ${st.chip}">${esc(st.label)}</span>${st.pend?`<span class="chip c-warn">${esc(t('changeWaiting',{n:st.pend}))}</span>`:''}${bad?`<span class="chip c-bad">${ic('tri',12)} ${esc(t('nProblems',{n:bad}))}</span>`:''}${d.report?`<span class="chip c-bad">${esc(t('reportedTag'))}</span>`:''}</span></button></li>`; });
+    h+=`<li class="deal-li"><button class="deal-del" data-act="dealDelAsk" data-id="${d.id}" aria-label="${esc(t('delDealAria',{title:tx(d.title)}))}" title="${esc(t('delDealYes'))}">${ic('trash',20)}</button><button class="tap deal-row" data-act="openDeal" data-id="${d.id}"><span class="row between" style="align-items:flex-start"><span class="t">${esc(tx(d.title))}</span><span class="pct">${esc(t('settledPct',{n:c.total}))}</span></span><span class="small muted">${esc(d.parties[1].org)}${d.value?' · '+rupee(d.value):''}</span><span class="bar"><i style="width:${c.total}%"></i></span><span class="row wrap" style="gap:6px"><span class="chip ${st.chip}">${esc(st.label)}</span>${st.pend?`<span class="chip c-warn">${esc(t('changeWaiting',{n:st.pend}))}</span>`:''}${bad?`<span class="chip c-bad">${ic('tri',12)} ${esc(t('nProblems',{n:bad}))}</span>`:''}${d.report?`<span class="chip c-bad">${esc(t('reportedTag'))}</span>`:''}</span></button></li>`; });
   if(!ds.length) h+=`<li class="pad stack-s"><p class="small muted">${esc(t('emptyDeals'))}</p><div class="row wrap"><button class="btn sm" data-act="newDeal">${ic('plus',16)} ${esc(t('newDeal'))}</button><button class="btn sec sm" data-act="demoLogin" data-id="u_ravi_4821">${esc(t('seeSamples'))}</button></div></li>`;
   h+=`</ul></section></div></div>`;
   return h;
@@ -2095,7 +2095,7 @@ function copy(text,fb){ const sel=()=>{ if(fb){ fb.select(); } toast(t('copied')
 function syncInp(){ const ta=$('#inpText'); if(ta&&ui.inp) ui.inp.text=ta.value; }
 
 /* ---------- events ---------- */
-const BUSY_ACTS=new Set(['saveRecord','createDeal','doSign','doEsign','freeze','newRev','authOtp','authVerify','rsSubmit','rsFreeze','downloadQuote','exportFormal','recDel','deleteAcct','lawApprove','lawNotes','apiSave','roomSave','requestLawyer','createDraft','runCompare','ndSample','logout','confirmNotary','saveParties']), RUNNING=new Set();
+const BUSY_ACTS=new Set(['dealDel','saveRecord','createDeal','doSign','doEsign','freeze','newRev','authOtp','authVerify','rsSubmit','rsFreeze','downloadQuote','exportFormal','recDel','deleteAcct','lawApprove','lawNotes','apiSave','roomSave','requestLawyer','createDraft','runCompare','ndSample','logout','confirmNotary','saveParties']), RUNNING=new Set();
 document.addEventListener('click',async e=>{
   const a=e.target.closest('[data-act]'); if(!a||a.disabled) return;
   const act=a.dataset.act;
@@ -2131,6 +2131,13 @@ async function handleAct(e,a){
     case 'analyse': if(d) analyseDeal(d); break;
     case 'termSheet': termSheet(a.dataset.k); break;
     case 'recordSheet': recordSheet(a.dataset.id); break;
+    case 'dealDelAsk': { const dd=deal(a.dataset.id); if(!dd) break; const signed=dd.versions.filter(v=>v.signatures.length).map(v=>v.rev);
+      if(signed.length||dd.frozen){ openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico" style="background:var(--navy-t);color:var(--brand)">${ic('lock',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('delDealLockedT'))}</h2><p class="small muted">${esc(signed.length?t('delDealLockedB',{n:signed.join(', ')}):t('delDealReported'))}</p></div><button class="btn sec full" data-act="closeSheet">${esc(t('close'))}</button>`); break; }
+      openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico">${ic('trash',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('delDealQ'))}</h2><p><b>${esc(tx(dd.title))}</b> · <span class="mono">${esc(dd.id)}</span></p><p class="small muted">${esc(t('delDealB',{n:dd.records.length}))}</p></div><div class="stack-s"><button class="btn danger full" data-act="dealDel" data-id="${dd.id}">${ic('trash',18)} ${esc(t('delDealYes'))}</button><button class="btn sec full" data-act="closeSheet">${esc(t('cancel'))}</button></div>`); break; }
+    case 'dealDel': { const dd=deal(a.dataset.id); if(!dd||dd.versions.some(v=>v.signatures.length)||dd.frozen) break; closeSheet();
+      const paths=dd.records.map(r=>r.media&&r.media.path).filter(Boolean); if(paths.length&&useStorage(dd)) cloudRemoveFiles(paths);
+      S.deals=S.deals.filter(x=>x!==dd); if(ui.dealId===dd.id) ui.dealId=null; if(ui.roomDeal===dd.id) ui.roomDeal=null;
+      save(); ui.keep=true; render(); toast(t('delDealDone',{title:tx(dd.title)})); break; }
     case 'recDelAsk': { const r=d&&d.records.find(x=>x.id===a.dataset.id); if(!r) break; const locked=d.versions.filter(v=>v.payload.evidence.some(e=>e.id===r.id)).map(v=>v.rev);
       if(locked.length){ openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico" style="background:var(--navy-t);color:var(--brand)">${ic('lock',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('delLockedT'))}</h2><p class="small muted">${esc(t('delLockedB',{n:locked.join(', ')}))}</p></div><button class="btn sec full" data-act="closeSheet">${esc(t('close'))}</button>`); break; }
       openSheet(`<div class="stack" style="align-items:center;text-align:center"><span class="warn-ico">${ic('trash',28)}</span><h2 class="h2" id="sheetTitle">${esc(t('delEvidenceQ'))}</h2><p><b>${esc(recName(r))}</b> · <span class="mono">${esc(r.id)}</span></p><p class="small muted">${esc(t('delEvidenceB'))}</p></div><div class="stack-s"><button class="btn danger full" data-act="recDel" data-id="${r.id}">${ic('trash',18)} ${esc(t('delEvidenceYes'))}</button><button class="btn sec full" data-act="closeSheet">${esc(t('cancel'))}</button></div>`); break; }
