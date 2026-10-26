@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Karnataka State Bar Council (mock for testing)</title></head><body>
+<h3>Karnataka State Bar Council</h3><p>Mock copy of the MEMBERSHIP DETAILS search, for testing verify_ksbc.py offline. Not the real portal.</p>
+<table><tr><td colspan="2"><b>MEMBERSHIP DETAILS</b></td></tr>
+<tr><td>Name</td><td><input type="text" id="t1"></td></tr>
+<tr><td>Roll No</td><td><input type="text" id="t2"></td></tr>
+<tr><td>Place of Practice</td><td><select id="t3"><option>--Select--</option><option>BENGALURU</option><option>MYSURU</option></select></td></tr>
+<tr><td></td><td><input type="button" value="Search" onclick="go()"></td></tr></table>
+<div id="out"></div><p>Helpline 080 2222 1234 · Since 1961</p>
+<script>
+const DB=[["KAR/1234/2016","MEERA IYER","S IYER","BENGALURU"],["KAR/5678/2019","YASHASHWINI T NEELANAUR","T NEELANAUR","BENGALURU"],["KAR/0042/2010","PAVAN N VANJRE","N VANJRE","MYSURU"]];
+function go(){ const q=document.getElementById('t2').value.toUpperCase().replace(/\s/g,''); const num=q.split('/')[1]||q;
+  const hits=DB.filter(r=>r[0]===q||r[0].split('/')[1]===num&&(q===num||r[0].endsWith(q.split('/')[2]||'')));
+  const html=hits.length?'<table border="1"><tr><th>Sl No</th><th>Roll No</th><th>Name</th><th>Father Name</th><th>Place of Practice</th></tr>'+hits.map((r,i)=>`<tr><td>${i+1}</td><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')+'</table>':'<p>No records found</p>';
+  if(location.hash==='#popup'){ const w=window.open('about:blank'); w.document.write('<html><body>'+html+'</body></html>'); w.document.close(); } else document.getElementById('out').innerHTML=html; }
+</script></body></html>
